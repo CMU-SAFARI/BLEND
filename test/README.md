@@ -1,4 +1,4 @@
-### Replicating the results in the paper
+# Replicating the results in the paper
 
 ## Prerequisites
 
@@ -47,7 +47,7 @@ Now that you have downloaded all the datasets, we can start running all the tool
 
 We run each tool for finding overlapping reads for each dataset. We use 32 threads for each tool but you can easily change this number in the scripts we use below.
 
-# BLEND
+### BLEND
 
 Here we run BLEND to find overlapping reads for each dataset.
 
@@ -57,7 +57,7 @@ bash overlap.sh
 cd ..
 ```
 
-# Minimap2
+### Minimap2
 
 Here we run Minimap2 to find overlapping reads for each dataset.
 
@@ -67,7 +67,7 @@ bash overlap.sh
 cd ..
 ```
 
-# MHAP
+### MHAP
 
 Here we run MHAP to find overlapping reads for each dataset.
 
@@ -77,7 +77,7 @@ bash overlap.sh
 cd ..
 ```
 
-# BLASR
+### BLASR
 
 Here we run BLASR to find overlapping reads for each dataset.
 
@@ -91,7 +91,7 @@ cd ..
 
 We run each tool to perform read mapping for each dataset. We use 32 threads for each tool and 8 threads for sorting the BAM files but you can easily change this number in the scripts we use below.
 
-# BLEND
+### BLEND
 
 Here we run BLEND to perform read mapping for each dataset.
 
@@ -101,7 +101,7 @@ bash read_mapping.sh
 cd ..
 ```
 
-# Minimap2
+### Minimap2
 
 Here we run Minimap2 to perform read mapping for each dataset.
 
@@ -111,7 +111,7 @@ bash read_mapping.sh
 cd ..
 ```
 
-# Winnowmap
+### Winnowmap
 
 Here we run Winnowmap to perform read mapping for each dataset.
 
@@ -121,7 +121,7 @@ bash read_mapping.sh
 cd ..
 ```
 
-# BLASR
+### BLASR
 
 Here we run BLASR to perform read mapping for each dataset.
 
@@ -131,7 +131,7 @@ bash read_mapping.sh
 cd ..
 ```
 
-# S-conLSH
+### S-conLSH
 
 Here we run S-conLSH to perform read mapping for each dataset.
 
@@ -149,7 +149,7 @@ We also provide the scripts we use for evaluating the results under the [scripts
 
 Below we explain how to evaluate the results we generate for 1) finding overlapping reads and 2) read mapping.
 
-# Finding Overlapping Reads
+### Finding Overlapping Reads
 
 Each of the subdirectories under [comparisons](./comparisons/) include a directory called `overlap` where we include all the files to compare for a certain dataset. We explain how to evaluate the finding overlapping results for each dataset below.
 
@@ -209,7 +209,7 @@ for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maxi
 cd ../../../
 ```
 
-# Read Mapping
+### Read Mapping
 
 Each of the subdirectories under [comparisons](./comparisons/) include a directory called `read_mapping` where we include all the files to compare for a certain dataset. We explain how to evaluate the read mapping results for each dataset below.
 
@@ -295,4 +295,3 @@ We also provide the source we use to generate the figures we report in our submi
 ```bash
 wget https://zenodo.org/record/5782892/files/blend_figures.tar.gz
 ```
-
