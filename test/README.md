@@ -43,7 +43,7 @@ cd .. #going back to the test directory
 
 Now that you have downloaded all the datasets, we can start running all the tools to collect the results.
 
-##Finding Overlapping Reads
+## Finding Overlapping Reads
 
 We run each tool for finding overlapping reads for each dataset. We use 32 threads for each tool but you can easily change this number in the scripts we use below.
 
