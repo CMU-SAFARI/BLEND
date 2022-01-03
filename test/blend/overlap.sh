@@ -13,7 +13,7 @@ mkdir -p ${OUTDIR}
 bash ../scripts/blend-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${PRESETX} ${PRESETGEN} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-pb-pbsim-200x
-OUTDIR="./yeast-pb-pbsim/overlap/"
+OUTDIR="./yeast-pb-pbsim-200x/overlap/"
 PREFIX="pbsim_yeast_200x"
 READS="../data/yeast-pb-pbsim/pbsim_yeast_200x.fastq"
 PRESETX="ava-pb"

@@ -103,7 +103,7 @@ BLEND also provides preset options. Some of these preset options also depend on 
 -x ava-hifi --genome bacteria (-k15 -Xw500 --fixed-bits=30 --neighbors=5 -e0 -m100)
 ```
 
-## Replicating the results in the paper
+## Reproducing the results in the paper
 
-We explain how to replicate the results we produce in the BLEND paper in the [test directory](test/README.md).
+We explain how to reproduce the results we show in the BLEND paper in the [test directory](test/README.md).
 

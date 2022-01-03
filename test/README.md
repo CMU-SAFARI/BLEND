@@ -16,6 +16,7 @@ We use various tools to process and analyze the data we generate using each tool
 
 * [SAMtools](https://github.com/samtools/samtools/releases/download/1.14/samtools-1.14.tar.bz2)
 * [miniasm](https://github.com/lh3/miniasm/tree/ce615d1d6b8678d38f2f9d27c9dccd944436ae75)
+* [MUMmer v4.0.0rc1](https://github.com/mummer4/mummer/releases/tag/v4.0.0rc1)
 * [Seqtk](https://github.com/lh3/seqtk)
 * [BamUtil v1.0.15](https://github.com/statgen/bamUtil/releases/tag/v1.0.15)
 * [bedtools v2.30.0](https://github.com/arq5x/bedtools2/releases/tag/v2.30.0)
