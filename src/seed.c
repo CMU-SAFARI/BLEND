@@ -24,8 +24,8 @@ mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, 
 		q->is_tandem = q->flt = 0;
 		//@IMPORTANT: we disable tandem repeat feature for now as we cannot say anything about it
 		//when using the blend values
-		// if (i > 0 && p->x>>14 == mv->a[i - 1].x>>14) q->is_tandem = 1;
-		// if (i < mv->n - 1 && p->x>>14 == mv->a[i + 1].x>>14) q->is_tandem = 1;
+		if (i > 0 && p->x>>14 == mv->a[i - 1].x>>14) q->is_tandem = 1;
+		if (i < mv->n - 1 && p->x>>14 == mv->a[i + 1].x>>14) q->is_tandem = 1;
 	}
 	*n_m_ = k;
 	return m;
@@ -85,15 +85,15 @@ mm_seed_t *mm_collect_matches(void *km, int *_n_m, int qlen, int max_occ, int ma
 	m = mm_seed_collect_all(km, mi, mv, &n_m0);
 	//@IMPORTANT: We do not deal with high frequency kmers now because we may intentionally
 	//be generating those high frequency kmers due to the blend values
-	// if (dist > 0 && max_max_occ > max_occ){
-	// 	// printf("%s1\n", __func__);
-	// 	mm_seed_select(n_m0, m, qlen, max_occ, max_max_occ, dist);
-	// } else{
-	// 	// printf("%s2\n", __func__);
-	// 	for (i = 0; i < n_m0; ++i)
-	// 		if (m[i].n > max_occ)
-	// 			m[i].flt = 1;
-	// }
+	if (dist > 0 && max_max_occ > max_occ){
+		// printf("%s1\n", __func__);
+		mm_seed_select(n_m0, m, qlen, max_occ, max_max_occ, dist);
+	} else{
+		// printf("%s2\n", __func__);
+		for (i = 0; i < n_m0; ++i)
+			if (m[i].n > max_occ)
+				m[i].flt = 1;
+	}
 	for (i = 0, n_m = 0, *rep_len = 0, *n_a = 0; i < n_m0; ++i){
 		mm_seed_t *q = &m[i];
 		//fprintf(stderr, "X\t%d\t%d\t%d\n", q->q_pos>>1, q->n, q->flt);
