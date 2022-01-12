@@ -21,6 +21,7 @@ We use various tools to process and analyze the data we generate using each tool
 * [BamUtil v1.0.15](https://github.com/statgen/bamUtil/releases/tag/v1.0.15)
 * [bedtools v2.30.0](https://github.com/arq5x/bedtools2/releases/tag/v2.30.0)
 * [mosdepth v0.3.2](https://github.com/brentp/mosdepth/releases/tag/v0.3.2)
+* [QUAST v5.0.2](https://github.com/ablab/quast/releases/tag/quast_5.0.2)
 
 We suggest using conda to install these tools with their specified versions as almost all of them are included in the conda repository.
 
@@ -28,7 +29,7 @@ Please make sure that all of these tools are in your `PATH`
 
 ## Datasets
 
-All the datasets (except the human genome dataset) can be downloaded vi Zenodo. For the human genome dataset, we use its already available repositories to download. We provide the scripts to download all these files under [data directory](./data/). In order to download:
+All the datasets (except the human genome dataset) can be downloaded via Zenodo. For the human genome dataset, we use its already available repositories to download. We provide the scripts to download all these files under [data directory](./data/). In order to download:
 
 ```bash
 cd data

@@ -4,7 +4,6 @@ BLEND is a mechanism that can efficiently find fuzzy seed matches between sequen
 
 - We enable the Minimap2 implementation so that it can find fuzzy seed matches using the BLEND mechanism as the original implementation can only find the exact-matching seeds between sequences. To this end, we change the [sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c) implementation of Minimap2 so that 1) we can generate the seeds that BLEND finds and 2) generate the hash values for seeds to find fuzzy seed matches.
 - We enable the Minimap2 implementation to use seeds longer than 256 bases so that it can store longer seeds when using BLEND by combining the minimizer k-mer with *many* neighbor k-mers (e.g., hundreds), if necessary. The current implementation of Minimap2 allocates 8-bits to store seed lengths up to 256 characters. We change this requirement in various places of the implementation (e.g., [line 112 in sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L112) and [line 239 in index.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/index.c#L239)) so that BLEND can use 14 bits to store seed lengths up to 16384 characters. We do this because BLEND merges many k-mers into a single seed, which may be much larger than a 256 character-long sequence.
-- We disable filtering out the minimizer k-mers (i.e., seeds in BLEND's case) based on their number of maximum occurence. We do this because BLEND enables generating the same hash value for similar seeds, which may lead to many hash values above the maximum threshold. We do not oppose enabling this filtering mechanism, but it requires further investigation on how to set this threshold value for different parameter settings in BLEND. Thus, filtering out the seeds that occur more than *X* times is a future work for BLEND so that we can define the value `X` without reducing the accuracy of BLEND.  
 
 ## Cloning the source code
 
@@ -105,5 +104,5 @@ BLEND also provides preset options. Some of these preset options also depend on 
 
 ## Reproducing the results in the paper
 
-We explain how to reproduce the results we show in the BLEND paper in the [test directory](test/README.md).
+We explain how to reproduce the results we show in the BLEND paper in the [test directory](./test/).
 
