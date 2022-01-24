@@ -57,73 +57,6 @@ static inline int tq_shift(tiny_queue_t *q)
 	return x;
 }
 
-uint64_t calculate_blend(const char *str,
-                         const int start,
-                         const int k,
-                         const int w,
-                         const int z,
-                         const int is_hpc,
-                         const uint64_t blendStart,
-                         const uint64_t mask,
-                         const uint64_t shift1,
-                         int16_t* blendValCnt,
-                         int* endpos){
-    
-//    printf("%s z: %d w: %d start: %d\n", __func__, z, w, start);
-    
-    tiny_queue_t tq;
-    int i, l, kmer_span = 0;
-    uint64_t kmer = 0;
-    uint64_t firstHashVal = 0;
-    int kCount = 0;
-    int kShiftCount = 1;
-    (*endpos) = -1;
-    int16_t bi;
-    l = 0;
-    for (i = start; i >= 0 && kCount < w; --i){
-        int c = seq_nt4_table[(uint8_t)str[i]];
-        if (c < 4){ // not an ambiguous base
-            if (is_hpc){ //checking whether homopolymer compression
-                int skip_len = 1;
-                if (i > 0 && seq_nt4_table[(uint8_t)str[i - 1]] == c) {
-                    for (skip_len = 2; i - skip_len >= 0; ++skip_len)
-                        if (seq_nt4_table[(uint8_t)str[i + skip_len]] != c)
-                            break;
-                    i -= skip_len - 1; // put $i at the end of the current homopolymer run
-                }
-                tq_push(&tq, skip_len);
-                kmer_span += skip_len;
-                if (tq.count > k) kmer_span -= tq_shift(&tq);
-            } else kmer_span = l + 1 < k? l + 1 : k;
-            
-            //@IDEA: if we are blending bit versions of k-mers, then we can directly calculate
-            //the blend value here by looking at the each character. it will be important
-            //for the performance
-            kmer = (z == 0)?(kmer >> 2 | c << shift1):(((kmer << 2) | (3ULL^c))&mask);
-            ++l;
-            
-            if (l >= k && kmer_span < 256){
-                if(++kCount == w) (*endpos) = i; //kmer span of the first kmer involved
-                bi = sizeof(uint64_t)*8-1;
-                uint64_t hashVal = hash64(kmer, mask);
-                if(kCount == 1) firstHashVal = hashVal;
-                for (uint64_t val = blendStart; val > 0; val >>= 1)
-                    blendValCnt[bi--] += ((hashVal&val) == val)?1:-1;
-            }
-        } else l = 0, tq.count = tq.front = 0, kmer_span = 0;
-    }
-    
-    if(kCount == w){
-        uint64_t blendVal = 0;
-        bi = sizeof(uint64_t)*8-1;
-        for (uint64_t val = blendStart; val > 0; val >>= 1)
-            if(blendValCnt[bi--]>0) blendVal |= val;
-        return blendVal;
-    }
-    //if there are not enough neighbor k-mers to blend, we return the original hash value at start
-    return firstHashVal;
-}
-
 /**
  * Find symmetric (w,k)-minimizers on a DNA sequence
  *
@@ -132,7 +65,7 @@ uint64_t calculate_blend(const char *str,
  * @param len    length of $str
  * @param w      find a BLEND value for every $w consecutive k-mers
  * @param k      k-mer size
- * @param n_neighbors the number of neighbor k-mers from both ends that should be blended along with the minimizer. E.g., if 2, then take 2 previous and 2 next k-mers of the minimizer + the minimizer itself to generate the BLEND value.
+ * @param n_neighbors should BLEND use minimizers or not. If so, the number tells how many neighbor k-mers should be blended. E.g., if 3, then take 1 minimizer and 2 preceding k-mers to calculate the hash value of a seed
  * @param rid    reference ID; will be copied to the output $p array
  * @param is_hpc homopolymer-compressed or not
  * @param p      minimizers
@@ -434,9 +367,9 @@ void mm_sketch_blend(void *km,
  * @param blend_bits skip/shift this many k-mers before generating the next BLEND value
  * @param k      k-mer size
  * @param k_shift skip/shift this many characters before calculating the next k-mer
+ * @param n_neighbors should BLEND use minimizers or not. If so, the number tells how many neighbor k-mers should be blended. E.g., if 3, then take 1 minimizer and 2 preceding k-mers to calculate the hash value of a seed
  * @param rid    reference ID; will be copied to the output $p array
  * @param is_hpc homopolymer-compressed or not
- * @param is_minimizer should BLEND minimizers or not. If so, the number tells how many neighbor k-mers from both ends should be blended with the minimizer. E.g., if 2, then take 2 previous and 2 next k-mers of the minimizer to generate the BLEND value.
  * @param p      minimizers
  *               p->a[i].x = kMer<<14 | kmerSpan
  *               p->a[i].y = rid<<32 | lastPos<<1 | strand
@@ -451,12 +384,12 @@ void mm_sketch(void *km,
                int blend_bits,
 			   int k,
                int k_shift,
+               int n_neighbors,
 			   uint32_t rid,
 			   int is_hpc,
-               int is_minimizer,
 			   mm128_v *p){
     
-    if(is_minimizer > 0)
-        mm_sketch_minimizer_blend(km, str, len, w, blend_bits, k, is_minimizer, rid, is_hpc, p);
+    if(n_neighbors > 0)
+        mm_sketch_minimizer_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
     else mm_sketch_blend(km, str, len, w, blend_bits, k, k_shift, rid, is_hpc, p);
 }

@@ -6,7 +6,7 @@ We compare BLEND with Minimap2 (for finding overlapping reads and read mapping),
 
 We list the links to download and compile each tool for comparison below:
 
-* [Minimap2 (v2.22)](https://github.com/lh3/minimap2/releases/tag/v2.22)
+* [Minimap2 (v2.24)](https://github.com/lh3/minimap2/releases/tag/v2.24)
 * [MHAP (v2.1.3 -- via conda)](https://anaconda.org/bioconda/mhap/2.1.3/download/noarch/mhap-2.1.3-hdfd78af_1.tar.bz2)
 * [BLASR (v5.3.5 -- via conda)](https://anaconda.org/bioconda/blasr/5.3.5/download/linux-64/blasr-5.3.5-0.tar.bz2)
 * [Winnowmap (v2.03 -- via conda)](https://anaconda.org/bioconda/winnowmap/2.03/download/linux-64/winnowmap-2.03-h2e03b76_0.tar.bz2)

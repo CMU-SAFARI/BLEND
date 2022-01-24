@@ -6,17 +6,25 @@
 #include "kalloc.h"
 #include "krmq.h"
 
-static inline float mg_log2(float x) // NB: this doesn't work when x<2
+static int64_t mg_chain_bk_end(int32_t max_drop, const mm128_t *z, const int32_t *f, const int64_t *p, int32_t *t, int64_t k)
 {
-	union { float f; uint32_t i; } z = { x };
-	float log_2 = ((z.i >> 23) & 255) - 128;
-	z.i &= ~(255 << 23);
-	z.i += 127 << 23;
-	log_2 += (-0.34484843f * z.f + 2.02466578f) * z.f - 0.67487759f;
-	return log_2;
+	int64_t i = z[k].y, end_i = -1, max_i = i;
+	int32_t max_s = 0;
+	if (i < 0 || t[i] != 0) return i;
+	do {
+		int32_t s;
+		t[i] = 2;
+		end_i = i = p[i];
+		s = i < 0? z[k].x : (int32_t)z[k].x - f[i];
+		if (s > max_s) max_s = s, max_i = i;
+		else if (max_s - s > max_drop) break;
+	} while (i >= 0 && t[i] == 0);
+	for (i = z[k].y; i >= 0 && i != end_i; i = p[i]) // reset modified t[]
+		t[i] = 0;
+	return max_i;
 }
 
-uint64_t *mg_chain_backtrack(void *km, int64_t n, const int32_t *f, const int64_t *p, int32_t *v, int32_t *t, int32_t min_cnt, int32_t min_sc, int32_t *n_u_, int32_t *n_v_)
+uint64_t *mg_chain_backtrack(void *km, int64_t n, const int32_t *f, const int64_t *p, int32_t *v, int32_t *t, int32_t min_cnt, int32_t min_sc, int32_t max_drop, int32_t *n_u_, int32_t *n_v_)
 {
 	mm128_t *z;
 	uint64_t *u;
@@ -34,26 +42,32 @@ uint64_t *mg_chain_backtrack(void *km, int64_t n, const int32_t *f, const int64_
 
 	memset(t, 0, n * 4);
 	for (k = n_z - 1, n_v = n_u = 0; k >= 0; --k) { // precompute n_u
-		int64_t n_v0 = n_v;
-		int32_t sc;
-		for (i = z[k].y; i >= 0 && t[i] == 0; i = p[i])
-			++n_v, t[i] = 1;
-		sc = i < 0? z[k].x : (int32_t)z[k].x - f[i];
-		if (sc >= min_sc && n_v > n_v0 && n_v - n_v0 >= min_cnt)
-			++n_u;
-		else n_v = n_v0;
+		if (t[z[k].y] == 0) {
+			int64_t n_v0 = n_v, end_i;
+			int32_t sc;
+			end_i = mg_chain_bk_end(max_drop, z, f, p, t, k);
+			for (i = z[k].y; i != end_i; i = p[i])
+				++n_v, t[i] = 1;
+			sc = i < 0? z[k].x : (int32_t)z[k].x - f[i];
+			if (sc >= min_sc && n_v > n_v0 && n_v - n_v0 >= min_cnt)
+				++n_u;
+			else n_v = n_v0;
+		}
 	}
 	KMALLOC(km, u, n_u);
 	memset(t, 0, n * 4);
 	for (k = n_z - 1, n_v = n_u = 0; k >= 0; --k) { // populate u[]
-		int64_t n_v0 = n_v;
-		int32_t sc;
-		for (i = z[k].y; i >= 0 && t[i] == 0; i = p[i])
-			v[n_v++] = i, t[i] = 1;
-		sc = i < 0? z[k].x : (int32_t)z[k].x - f[i];
-		if (sc >= min_sc && n_v > n_v0 && n_v - n_v0 >= min_cnt)
-			u[n_u++] = (uint64_t)sc << 32 | (n_v - n_v0);
-		else n_v = n_v0;
+		if (t[z[k].y] == 0) {
+			int64_t n_v0 = n_v, end_i;
+			int32_t sc;
+			end_i = mg_chain_bk_end(max_drop, z, f, p, t, k);
+			for (i = z[k].y; i != end_i; i = p[i])
+				v[n_v++] = i, t[i] = 1;
+			sc = i < 0? z[k].x : (int32_t)z[k].x - f[i];
+			if (sc >= min_sc && n_v > n_v0 && n_v - n_v0 >= min_cnt)
+				u[n_u++] = (uint64_t)sc << 32 | (n_v - n_v0);
+			else n_v = n_v0;
+		}
 	}
 	kfree(km, z);
 	assert(n_v < INT32_MAX);
@@ -134,7 +148,7 @@ static inline int32_t comput_sc(const mm128_t *ai, const mm128_t *aj, int32_t ma
 mm128_t *mg_lchain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int max_iter, int min_cnt, int min_sc, float chn_pen_gap, float chn_pen_skip,
 					  int is_cdna, int n_seg, int64_t n, mm128_t *a, int *n_u_, uint64_t **_u, void *km)
 { // TODO: make sure this works when n has more than 32 bits
-	int32_t *f, *t, *v, n_u, n_v, mmax_f = 0;
+	int32_t *f, *t, *v, n_u, n_v, mmax_f = 0, max_drop = bw;
 	int64_t *p, i, j, max_ii, st = 0, n_iter = 0;
 	uint64_t *u;
 
@@ -145,6 +159,7 @@ mm128_t *mg_lchain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int 
 	}
 	if (max_dist_x < bw) max_dist_x = bw;
 	if (max_dist_y < bw && !is_cdna) max_dist_y = bw;
+	if (is_cdna) max_drop = INT32_MAX;
 	KMALLOC(km, p, n);
 	KMALLOC(km, f, n);
 	KMALLOC(km, v, n);
@@ -191,7 +206,7 @@ mm128_t *mg_lchain_dp(int max_dist_x, int max_dist_y, int bw, int max_skip, int 
 		if (mmax_f < max_f) mmax_f = max_f;
 	}
 
-	u = mg_chain_backtrack(km, n, f, p, v, t, min_cnt, min_sc, &n_u, &n_v);
+	u = mg_chain_backtrack(km, n, f, p, v, t, min_cnt, min_sc, max_drop, &n_u, &n_v);
 	*n_u_ = n_u, *_u = u; // NB: note that u[] may not be sorted by score here
 	kfree(km, p); kfree(km, f); kfree(km, t);
 	if (n_u == 0) {
@@ -235,7 +250,7 @@ static inline int32_t comput_sc_simple(const mm128_t *ai, const mm128_t *aj, flo
 mm128_t *mg_lchain_rmq(int max_dist, int max_dist_inner, int bw, int max_chn_skip, int cap_rmq_size, int min_cnt, int min_sc, float chn_pen_gap, float chn_pen_skip,
 					   int64_t n, mm128_t *a, int *n_u_, uint64_t **_u, void *km)
 {
-	int32_t *f,*t, *v, n_u, n_v, mmax_f = 0, max_rmq_size = 0;
+	int32_t *f,*t, *v, n_u, n_v, mmax_f = 0, max_rmq_size = 0, max_drop = bw;
 	int64_t *p, i, i0, st = 0, st_inner = 0, n_iter = 0;
 	uint64_t *u;
 	lc_elem_t *root = 0, *root_inner = 0;
@@ -343,7 +358,7 @@ mm128_t *mg_lchain_rmq(int max_dist, int max_dist_inner, int bw, int max_chn_ski
 	}
 	km_destroy(mem_mp);
 
-	u = mg_chain_backtrack(km, n, f, p, v, t, min_cnt, min_sc, &n_u, &n_v);
+	u = mg_chain_backtrack(km, n, f, p, v, t, min_cnt, min_sc, max_drop, &n_u, &n_v);
 	*n_u_ = n_u, *_u = u; // NB: note that u[] may not be sorted by score here
 	kfree(km, p); kfree(km, f); kfree(km, t);
 	if (n_u == 0) {

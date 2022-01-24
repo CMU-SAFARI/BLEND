@@ -2,6 +2,31 @@
 #include "kalloc.h"
 #include "ksort.h"
 
+void mm_seed_mz_flt(void *km, mm128_v *mv, int32_t q_occ_max, float q_occ_frac)
+{
+	mm128_t *a;
+	size_t i, j, st;
+	if (mv->n <= q_occ_max || q_occ_frac <= 0.0f || q_occ_max <= 0) return;
+	KMALLOC(km, a, mv->n);
+	for (i = 0; i < mv->n; ++i)
+		a[i].x = mv->a[i].x, a[i].y = i;
+	radix_sort_128x(a, a + mv->n);
+	for (st = 0, i = 1; i <= mv->n; ++i) {
+		if (i == mv->n || a[i].x != a[st].x) {
+			int32_t cnt = i - st;
+			if (cnt > q_occ_max && cnt > mv->n * q_occ_frac)
+				for (j = st; j < i; ++j)
+					mv->a[a[j].y].x = 0;
+			st = i;
+		}
+	}
+	kfree(km, a);
+	for (i = j = 0; i < mv->n; ++i)
+		if (mv->a[i].x != 0)
+			mv->a[j++] = mv->a[i];
+	mv->n = j;
+}
+
 mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, int32_t *n_m_)
 {
 	mm_seed_t *m;
@@ -14,7 +39,7 @@ mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, 
 		mm128_t *p = &mv->a[i];
 		//@IMPORTANT: Right now we shift 14 bits to right and take the least significant
 		//32-bits. Some of the most significant bits remain garbage but we could use them
-		//think about it later
+		//think about it later. -- update: it's now enabled. Subject to change.
 		uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0x3fff; //@IMPORTANT: 14bits reserved for the span so should use 3fff instead if we can figure out the entire position storage mechanism
 		int t;
 		cr = mm_idx_get(mi, p->x>>14, &t);
@@ -23,7 +48,7 @@ mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, 
 		q->q_pos = q_pos, q->q_span = q_span, q->cr = cr, q->n = t, q->seg_id = p->y >> 32;
 		q->is_tandem = q->flt = 0;
 		//@IMPORTANT: we disable tandem repeat feature for now as we cannot say anything about it
-		//when using the blend values
+		//when using the blend values -- update: it's now enabled. Subject to change.
 		if (i > 0 && p->x>>14 == mv->a[i - 1].x>>14) q->is_tandem = 1;
 		if (i < mv->n - 1 && p->x>>14 == mv->a[i + 1].x>>14) q->is_tandem = 1;
 	}
@@ -85,25 +110,25 @@ mm_seed_t *mm_collect_matches(void *km, int *_n_m, int qlen, int max_occ, int ma
 	m = mm_seed_collect_all(km, mi, mv, &n_m0);
 	//@IMPORTANT: We do not deal with high frequency kmers now because we may intentionally
 	//be generating those high frequency kmers due to the blend values
-	if (dist > 0 && max_max_occ > max_occ){
+	if (dist > 0 && max_max_occ > max_occ) {
 		// printf("%s1\n", __func__);
 		mm_seed_select(n_m0, m, qlen, max_occ, max_max_occ, dist);
-	} else{
+	} else {
 		// printf("%s2\n", __func__);
 		for (i = 0; i < n_m0; ++i)
 			if (m[i].n > max_occ)
 				m[i].flt = 1;
 	}
-	for (i = 0, n_m = 0, *rep_len = 0, *n_a = 0; i < n_m0; ++i){
+	for (i = 0, n_m = 0, *rep_len = 0, *n_a = 0; i < n_m0; ++i) {
 		mm_seed_t *q = &m[i];
 		//fprintf(stderr, "X\t%d\t%d\t%d\n", q->q_pos>>1, q->n, q->flt);
-		if (q->flt){
+		if (q->flt) {
 			int en = (q->q_pos >> 1) + 1, st = en - q->q_span;
 			if (st > rep_en) {
 				*rep_len += rep_en - rep_st;
 				rep_st = st, rep_en = en;
 			} else rep_en = en;
-		}else{
+		} else {
 			*n_a += q->n;
 			(*mini_pos)[(*n_mini_pos)++] = (uint64_t)q->q_span<<32 | q->q_pos>>1;
 			m[n_m++] = *q;

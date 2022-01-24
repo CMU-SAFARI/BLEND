@@ -72,10 +72,16 @@ static ko_longopt_t long_options[] = {
 	{ "alt-drop",       ko_required_argument, 345 },
 	{ "mask-len",       ko_required_argument, 346 },
 	{ "rmq",            ko_optional_argument, 347 },
-    { "fixed-bits",     ko_required_argument, 348 },
-    { "k-shift",        ko_required_argument, 349 },
-    { "neighbors",      ko_required_argument, 350 },
-    { "genome",         ko_required_argument, 351 },
+	{ "qstrand",        ko_no_argument,       348 },
+	{ "cap-kalloc",     ko_required_argument, 349 },
+	{ "q-occ-frac",     ko_required_argument, 350 },
+	{ "chain-skip-scale",ko_required_argument,351 },
+	{ "print-chains",   ko_no_argument,       352 },
+	{ "no-hash-name",   ko_no_argument,       353 },
+    { "fixed-bits",     ko_required_argument, 354 },
+    { "k-shift",        ko_required_argument, 355 },
+    { "neighbors",      ko_required_argument, 356 },
+    { "genome",         ko_required_argument, 357 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -104,7 +110,7 @@ static inline int64_t mm_parse_num(const char *str)
 	return mm_parse_num2(str, 0);
 }
 
-static inline void yes_or_no(mm_mapopt_t *opt, int flag, int long_idx, const char *arg, int yes_to_set)
+static inline void yes_or_no(mm_mapopt_t *opt, int64_t flag, int long_idx, const char *arg, int yes_to_set)
 {
 	if (yes_to_set) {
 		if (strcmp(arg, "yes") == 0 || strcmp(arg, "y") == 0) opt->flag |= flag;
@@ -139,29 +145,28 @@ int main(int argc, char *argv[])
     
     // test command line options and apply option -x/preset first
     while((c = ketopt(&o, argc, argv, 1, opt_str, long_options)) >= 0) {
-        if(c == 'x'){
-            presetX = o.arg;
-        }else if (c == 351){
-            presetGen = o.arg;
-        } else if (c == ':') {
-            fprintf(stderr, "[ERROR] missing option argument\n");
-            return 1;
-        } else if (c == '?') {
-            fprintf(stderr, "[ERROR] unknown option in \"%s\"\n", argv[o.i - 1]);
-            return 1;
-        }
+		if(c == 'x'){
+			presetX = o.arg;
+		}else if (c == 357){
+			presetGen = o.arg;
+		} else if (c == ':') {
+    		fprintf(stderr, "[ERROR] missing option argument\n");
+			return 1;
+		} else if (c == '?') {
+    		fprintf(stderr, "[ERROR] unknown option in \"%s\"\n", argv[o.i - 1]);
+			return 1;
+		}
     }
     
     if(presetX && mm_set_opt(presetX, presetGen, &ipt, &opt) < 0){
-        fprintf(stderr, "[ERROR] unknown preset '%s or %s'\n", presetX, presetGen);
-        return 1;
+		fprintf(stderr, "[ERROR] unknown preset '%s or %s'\n", presetX, presetGen);
+		return 1;
     }
     
     o = KETOPT_INIT;
 
 	while ((c = ketopt(&o, argc, argv, 1, opt_str, long_options)) >= 0) {
 		if (c == 'w') ipt.w = atoi(o.arg);
-        else if (c == 'k') ipt.k = atoi(o.arg);
 		else if (c == 'k') ipt.k = atoi(o.arg);
 		else if (c == 'H') ipt.flag |= MM_I_HPC;
 		else if (c == 'd') fnw = o.arg; // the above are indexing related options, except -I
@@ -236,9 +241,18 @@ int main(int argc, char *argv[])
 		else if (c == 341) opt.junc_bonus = atoi(o.arg); // --junc-bonus
 		else if (c == 342) opt.flag |= MM_F_SAM_HIT_ONLY; // --sam-hit-only
 		else if (c == 343) opt.chain_gap_scale = atof(o.arg); // --chain-gap-scale
+		else if (c == 351) opt.chain_skip_scale = atof(o.arg); // --chain-skip-scale
 		else if (c == 344) alt_list = o.arg; // --alt
 		else if (c == 345) opt.alt_drop = atof(o.arg); // --alt-drop
 		else if (c == 346) opt.mask_len = mm_parse_num(o.arg); // --mask-len
+		else if (c == 348) opt.flag |= MM_F_QSTRAND | MM_F_NO_INV; // --qstrand
+		else if (c == 349) opt.cap_kalloc = mm_parse_num(o.arg); // --cap-kalloc
+		else if (c == 350) opt.q_occ_frac = atof(o.arg); // --q-occ-frac
+		else if (c == 352) mm_dbg_flag |= MM_DBG_PRINT_CHAIN; // --print-chains
+		else if (c == 353) opt.flag |= MM_F_NO_HASH_NAME; // --no-hash-name
+		else if (c == 354) ipt.blend_bits = atoi(o.arg); // --blend_bits
+		else if (c == 355) ipt.k_shift = atoi(o.arg); // --k_shift
+		else if (c == 356) ipt.n_neighbors = atoi(o.arg); // --neighbors
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -264,16 +278,7 @@ int main(int argc, char *argv[])
 			yes_or_no(&opt, MM_F_NO_DUAL, o.longidx, o.arg, 0);
 		} else if (c == 347) { // --rmq
 			yes_or_no(&opt, MM_F_RMQ, o.longidx, o.arg, 1);
-		}else if (c == 348) { // --blend_bits
-            opt.blend_bits = atoi(o.arg);
-            ipt.blend_bits = opt.blend_bits;
-        }else if (c == 349) { // --k_shift
-            opt.k_shift = atoi(o.arg);
-            ipt.k_shift = opt.k_shift;
-        }else if (c == 350) { // --neighbors
-            opt.isMinimizer = atoi(o.arg);
-            ipt.isMinimizer = opt.isMinimizer;
-        } else if (c == 'S') {
+		} else if (c == 'S') {
 			opt.flag |= MM_F_OUT_CS | MM_F_CIGAR | MM_F_OUT_CS_LONG;
 			if (mm_verbose >= 2)
 				fprintf(stderr, "[WARNING]\033[1;31m option -S is deprecated and may be removed in future. Please use --cs=long instead.\033[0m\n");
@@ -326,63 +331,64 @@ int main(int argc, char *argv[])
 		opt.best_n = old_best_n, opt.flag |= MM_F_NO_PRINT_2ND;
 	}
 
-    if (argc == o.ind || fp_help == stdout) {
-        fprintf(fp_help, "Usage: blend [options] <target.fa>|<target.idx> [query.fa] [...]\n");
-        fprintf(fp_help, "Options:\n");
-        fprintf(fp_help, "  Indexing:\n");
-        fprintf(fp_help, "    -H           use homopolymer-compressed k-mer (preferrable for PacBio)\n");
-        fprintf(fp_help, "    -k INT       k-mer size (no larger than 28) [%d]\n", ipt.k);
-        // fprintf(fp_help, "    --k-shift INT characters to skip until the next k-mer [%d]\n", ipt.k_shift);
-        fprintf(fp_help, "    -w INT       Minimizer window size. [%d]\n", ipt.w);
-        fprintf(fp_help, "    --neighbors INT Combines INT amount of k-mers to generate a seed. [%d]\n", ipt.isMinimizer);
-        fprintf(fp_help, "    --fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [%d]\n", ipt.blend_bits);
-        fprintf(fp_help, "    -I NUM       split index for every ~NUM input bases [4G]\n");
-        fprintf(fp_help, "    -d FILE      dump index to FILE []\n");
-        fprintf(fp_help, "  Mapping:\n");
-        fprintf(fp_help, "    -f FLOAT     filter out top FLOAT fraction of repetitive minimizers [%g]\n", opt.mid_occ_frac);
-        fprintf(fp_help, "    -g NUM       stop chain enlongation if there are no minimizers in INT-bp [%d]\n", opt.max_gap);
-        fprintf(fp_help, "    -G NUM       max intron length (effective with -xsplice; changing -r) [200k]\n");
-        fprintf(fp_help, "    -F NUM       max fragment length (effective with -xsr or in the fragment mode) [800]\n");
-        fprintf(fp_help, "    -r NUM[,NUM] chaining/alignment bandwidth and long-join bandwidth [%d,%d]\n", opt.bw, opt.bw_long);
-        fprintf(fp_help, "    -n INT       minimal number of minimizers on a chain [%d]\n", opt.min_cnt);
-        fprintf(fp_help, "    -m INT       minimal chaining score (matching bases minus log gap penalty) [%d]\n", opt.min_chain_score);
-//        fprintf(fp_help, "    -T INT       SDUST threshold; 0 to disable SDUST [%d]\n", opt.sdust_thres); // TODO: this option is never used; might be buggy
-        fprintf(fp_help, "    -X           skip self and dual mappings (for the all-vs-all mode)\n");
-        fprintf(fp_help, "    -p FLOAT     min secondary-to-primary score ratio [%g]\n", opt.pri_ratio);
-        fprintf(fp_help, "    -N INT       retain at most INT secondary alignments [%d]\n", opt.best_n);
-        fprintf(fp_help, "  Alignment:\n");
-        fprintf(fp_help, "    -A INT       matching score [%d]\n", opt.a);
-        fprintf(fp_help, "    -B INT       mismatch penalty [%d]\n", opt.b);
-        fprintf(fp_help, "    -O INT[,INT] gap open penalty [%d,%d]\n", opt.q, opt.q2);
-        fprintf(fp_help, "    -E INT[,INT] gap extension penalty; a k-long gap costs min{O1+k*E1,O2+k*E2} [%d,%d]\n", opt.e, opt.e2);
-        fprintf(fp_help, "    -z INT[,INT] Z-drop score and inversion Z-drop score [%d,%d]\n", opt.zdrop, opt.zdrop_inv);
-        fprintf(fp_help, "    -s INT       minimal peak DP alignment score [%d]\n", opt.min_dp_max);
-        fprintf(fp_help, "    -u CHAR      how to find GT-AG. f:transcript strand, b:both strands, n:don't match GT-AG [n]\n");
-        fprintf(fp_help, "  Input/Output:\n");
-        fprintf(fp_help, "    -a           output in the SAM format (PAF by default)\n");
-        fprintf(fp_help, "    -o FILE      output alignments to FILE [stdout]\n");
-        fprintf(fp_help, "    -L           write CIGAR with >65535 ops at the CG tag\n");
-        fprintf(fp_help, "    -R STR       SAM read group line in a format like '@RG\\tID:foo\\tSM:bar' []\n");
-        fprintf(fp_help, "    -c           output CIGAR in PAF\n");
-        fprintf(fp_help, "    --cs[=STR]   output the cs tag; STR is 'short' (if absent) or 'long' [none]\n");
-        fprintf(fp_help, "    --MD         output the MD tag\n");
-        fprintf(fp_help, "    --eqx        write =/X CIGAR operators\n");
-        fprintf(fp_help, "    -Y           use soft clipping for supplementary alignments\n");
-        fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
-        fprintf(fp_help, "    -K NUM       minibatch size for mapping [500M]\n");
-        fprintf(fp_help, "    --version    show version number\n");
-        fprintf(fp_help, "  Preset:\n");
-        fprintf(fp_help, "    -x STR       preset (always applied before other options []\n");
-        fprintf(fp_help, "                 - map-pb/map-ont - PacBio CLR/Nanopore vs reference mapping\n");
-        fprintf(fp_help, "                 - map-hifi - PacBio HiFi reads vs reference mapping\n");
-        fprintf(fp_help, "                 - ava-pb/ava-ont/ava-hifi - PacBio/Nanopore/HiFi read overlap\n");
-//        fprintf(fp_help, "                 - asm5/asm10/asm20 - asm-to-ref mapping, for ~0.1/1/5%% sequence divergence\n");
-//        fprintf(fp_help, "                 - splice/splice:hq - long-read/Pacbio-CCS spliced alignment\n");
-        fprintf(fp_help, "                 - sr - genomic short-read mapping\n");
-        fprintf(fp_help, "    --genome STR preset (always applied before other options) []\n");
-        fprintf(fp_help, "                 - bacteria/eukaryote/human - Type of genome\n");
-//        fprintf(fp_help, "\nSee `man ./blend.1' for detailed description of these and other advanced command-line options.\n");
-        return fp_help == stdout? 0 : 1;
+	if (argc == o.ind || fp_help == stdout) {
+		fprintf(fp_help, "Usage: blend [options] <target.fa>|<target.idx> [query.fa] [...]\n");
+		fprintf(fp_help, "Options:\n");
+		fprintf(fp_help, "  Indexing:\n");
+		fprintf(fp_help, "    -H           use homopolymer-compressed k-mer (preferrable for PacBio)\n");
+		fprintf(fp_help, "    -k INT       k-mer size (no larger than 28) [%d]\n", ipt.k);
+		// fprintf(fp_help, "    --k-shift INT characters to skip until the next k-mer [%d]\n", ipt.k_shift);
+		fprintf(fp_help, "    -w INT       minimizer window size [%d]\n", ipt.w);
+		fprintf(fp_help, "    --neighbors INT Combines INT amount of k-mers to generate a seed. [%d]\n", ipt.n_neighbors);
+		fprintf(fp_help, "    --fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [%d]\n", ipt.blend_bits);
+		fprintf(fp_help, "    -I NUM       split index for every ~NUM input bases [4G]\n");
+		fprintf(fp_help, "    -d FILE      dump index to FILE []\n");
+		fprintf(fp_help, "  Mapping:\n");
+		fprintf(fp_help, "    -f FLOAT     filter out top FLOAT fraction of repetitive minimizers [%g]\n", opt.mid_occ_frac);
+		fprintf(fp_help, "    -g NUM       stop chain enlongation if there are no minimizers in INT-bp [%d]\n", opt.max_gap);
+		fprintf(fp_help, "    -G NUM       max intron length (effective with -xsplice; changing -r) [200k]\n");
+		fprintf(fp_help, "    -F NUM       max fragment length (effective with -xsr or in the fragment mode) [800]\n");
+		fprintf(fp_help, "    -r NUM[,NUM] chaining/alignment bandwidth and long-join bandwidth [%d,%d]\n", opt.bw, opt.bw_long);
+		fprintf(fp_help, "    -n INT       minimal number of minimizers on a chain [%d]\n", opt.min_cnt);
+		fprintf(fp_help, "    -m INT       minimal chaining score (matching bases minus log gap penalty) [%d]\n", opt.min_chain_score);
+//		fprintf(fp_help, "    -T INT       SDUST threshold; 0 to disable SDUST [%d]\n", opt.sdust_thres); // TODO: this option is never used; might be buggy
+		fprintf(fp_help, "    -X           skip self and dual mappings (for the all-vs-all mode)\n");
+		fprintf(fp_help, "    -p FLOAT     min secondary-to-primary score ratio [%g]\n", opt.pri_ratio);
+		fprintf(fp_help, "    -N INT       retain at most INT secondary alignments [%d]\n", opt.best_n);
+		fprintf(fp_help, "  Alignment:\n");
+		fprintf(fp_help, "    -A INT       matching score [%d]\n", opt.a);
+		fprintf(fp_help, "    -B INT       mismatch penalty (larger value for lower divergence) [%d]\n", opt.b);
+		fprintf(fp_help, "    -O INT[,INT] gap open penalty [%d,%d]\n", opt.q, opt.q2);
+		fprintf(fp_help, "    -E INT[,INT] gap extension penalty; a k-long gap costs min{O1+k*E1,O2+k*E2} [%d,%d]\n", opt.e, opt.e2);
+		fprintf(fp_help, "    -z INT[,INT] Z-drop score and inversion Z-drop score [%d,%d]\n", opt.zdrop, opt.zdrop_inv);
+		fprintf(fp_help, "    -s INT       minimal peak DP alignment score [%d]\n", opt.min_dp_max);
+		fprintf(fp_help, "    -u CHAR      how to find GT-AG. f:transcript strand, b:both strands, n:don't match GT-AG [n]\n");
+		fprintf(fp_help, "  Input/Output:\n");
+		fprintf(fp_help, "    -a           output in the SAM format (PAF by default)\n");
+		fprintf(fp_help, "    -o FILE      output alignments to FILE [stdout]\n");
+		fprintf(fp_help, "    -L           write CIGAR with >65535 ops at the CG tag\n");
+		fprintf(fp_help, "    -R STR       SAM read group line in a format like '@RG\\tID:foo\\tSM:bar' []\n");
+		fprintf(fp_help, "    -c           output CIGAR in PAF\n");
+		fprintf(fp_help, "    --cs[=STR]   output the cs tag; STR is 'short' (if absent) or 'long' [none]\n");
+		fprintf(fp_help, "    --MD         output the MD tag\n");
+		fprintf(fp_help, "    --eqx        write =/X CIGAR operators\n");
+		fprintf(fp_help, "    -Y           use soft clipping for supplementary alignments\n");
+		fprintf(fp_help, "    -t INT       number of threads [%d]\n", n_threads);
+		fprintf(fp_help, "    -K NUM       minibatch size for mapping [500M]\n");
+//		fprintf(fp_help, "    -v INT       verbose level [%d]\n", mm_verbose);
+		fprintf(fp_help, "    --version    show version number\n");
+		fprintf(fp_help, "  Preset:\n");
+		fprintf(fp_help, "    -x STR       preset (always applied before other options []\n");
+		fprintf(fp_help, "                 - map-pb/map-ont - PacBio CLR/Nanopore vs reference mapping\n");
+		fprintf(fp_help, "                 - map-hifi - PacBio HiFi reads vs reference mapping\n");
+		fprintf(fp_help, "                 - ava-pb/ava-ont/ava-hifi - PacBio/Nanopore/HiFi read overlap\n");
+//		fprintf(fp_help, "                 - asm5/asm10/asm20 - asm-to-ref mapping, for ~0.1/1/5%% sequence divergence\n");
+//		fprintf(fp_help, "                 - splice/splice:hq - long-read/Pacbio-CCS spliced alignment\n");
+		fprintf(fp_help, "                 - sr - genomic short-read mapping\n");
+		fprintf(fp_help, "    --genome STR preset (always applied before other options) []\n");
+		fprintf(fp_help, "                 - bacteria/eukaryote/human - Type of genome\n");
+//		fprintf(fp_help, "\nSee `man ./blend.1' for detailed description of these and other advanced command-line options.\n");
+		return fp_help == stdout? 0 : 1;
     }
 
 	if ((opt.flag & MM_F_SR) && argc - o.ind > 3) {
@@ -390,7 +396,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	idx_rdr = mm_idx_reader_open(argv[o.ind], &ipt, fnw);
-	if (idx_rdr == 0){
+	if (idx_rdr == 0) {
 		fprintf(stderr, "[ERROR] failed to open file '%s': %s\n", argv[o.ind], strerror(errno));
 		return 1;
 	}
@@ -402,7 +408,7 @@ int main(int argc, char *argv[])
 	if (opt.best_n == 0 && (opt.flag&MM_F_CIGAR) && mm_verbose >= 2)
 		fprintf(stderr, "[WARNING]\033[1;31m `-N 0' reduces alignment accuracy. Please use --secondary=no to suppress secondary alignments.\033[0m\n");
     
-    fprintf(stderr, "%s k: %d w: %d fixed-bits: %d neighbors: %d\n", __func__, ipt.k, ipt.w, ipt.blend_bits, ipt.isMinimizer);
+    fprintf(stderr, "%s k: %d w: %d fixed-bits: %d neighbors: %d\n", __func__, ipt.k, ipt.w, ipt.blend_bits, ipt.n_neighbors);
     
 	while ((mi = mm_idx_reader_read(idx_rdr, n_threads)) != 0) {
 		int ret;
@@ -436,7 +442,10 @@ int main(int argc, char *argv[])
 		if (mm_verbose >= 3) mm_idx_stat(mi);
 		if (junc_bed) mm_idx_bed_read(mi, junc_bed, 1);
 		if (alt_list) mm_idx_alt_read(mi, alt_list);
-		if (argc - (o.ind + 1) == 0) continue; // no query files
+		if (argc - (o.ind + 1) == 0) {
+			mm_idx_destroy(mi);
+			continue; // no query files
+		}
 		ret = 0;
 		if (!(opt.flag & MM_F_FRAG_MODE)) {
 			for (i = o.ind + 1; i < argc; ++i) {

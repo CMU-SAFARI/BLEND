@@ -48,7 +48,7 @@ mm_idx_t *mm_idx_init(int w, int blend_bits, int k, int k_shift, int b, int isMi
 	if (w < 1) w = 1;
 	mi = (mm_idx_t*)calloc(1, sizeof(mm_idx_t));
 	mi->w = w, mi->k = k, mi->b = b, mi->flag = flag;
-    mi->blend_bits = blend_bits, mi->k_shift = k_shift, mi->isMinimizer = isMinimzer;
+    mi->blend_bits = blend_bits, mi->k_shift = k_shift, mi->n_neighbors = isMinimzer;
 	mi->B = (mm_idx_bucket_t*)calloc(1<<b, sizeof(mm_idx_bucket_t));
 	if (!(mm_dbg_flag & 1)) mi->km = km_init();
 	return mi;
@@ -170,6 +170,29 @@ int mm_idx_getseq(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, ui
 		seq[i - st1] = mm_seq4_get(mi->S, i);
 	return en - st;
 }
+
+int mm_idx_getseq_rev(const mm_idx_t *mi, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq)
+{
+	uint64_t i, st1, en1;
+	const mm_idx_seq_t *s;
+	if (rid >= mi->n_seq || st >= mi->seq[rid].len) return -1;
+	s = &mi->seq[rid];
+	if (en > s->len) en = s->len;
+	st1 = s->offset + (s->len - en);
+	en1 = s->offset + (s->len - st);
+	for (i = st1; i < en1; ++i) {
+		uint8_t c = mm_seq4_get(mi->S, i);
+		seq[en1 - i - 1] = c < 4? 3 - c : c;
+	}
+	return en - st;
+}
+
+int mm_idx_getseq2(const mm_idx_t *mi, int is_rev, uint32_t rid, uint32_t st, uint32_t en, uint8_t *seq)
+{
+	if (is_rev) return mm_idx_getseq_rev(mi, rid, st, en, seq);
+	else return mm_idx_getseq(mi, rid, st, en, seq);
+}
+
 
 int32_t mm_idx_cal_max_occ(const mm_idx_t *mi, float f)
 {
@@ -364,9 +387,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			if (t->l_seq > 0){
 				// printf("%s6 %d %d %s %s\n", __func__, t->l_seq, t->rid, t->name, t->seq);
 				//check "mm_bseq1_t" in bseq.h for the meanings of l_seq etc...
-                //@IMPORTANT: Fixed parameters here
-                
-				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, t->rid, p->mi->flag&MM_I_HPC, p->mi->isMinimizer, &s->a);
+				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, &s->a);
 			}
 			else if (mm_verbose >= 2)
 				fprintf(stderr, "[WARNING] the length database sequence '%s' is 0\n", t->name);
@@ -383,7 +404,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
     return 0;
 }
 
-mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int blend_bits, int k, int k_shift, int b, int flag, int mini_batch_size, int isMinimizer, int n_threads, uint64_t batch_size)
+mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int blend_bits, int k, int k_shift, int b, int flag, int mini_batch_size, int n_neighbors, int n_threads, uint64_t batch_size)
 {
 	pipeline_t pl;
 	if (fp == 0 || mm_bseq_eof(fp)) return 0;
@@ -391,7 +412,7 @@ mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int blend_bits, int k, int k_shi
 	pl.mini_batch_size = (uint64_t)mini_batch_size < batch_size? mini_batch_size : batch_size;
 	pl.batch_size = batch_size;
 	pl.fp = fp;
-	pl.mi = mm_idx_init(w, blend_bits, k, k_shift, b, isMinimizer, flag);
+	pl.mi = mm_idx_init(w, blend_bits, k, k_shift, b, n_neighbors, flag);
 	kt_pipeline(n_threads < 3? n_threads : 3, worker_pipeline, &pl, 3);
 	if (mm_verbose >= 3)
 		fprintf(stderr, "[M::%s::%.3f*%.2f] collected minimizers\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0));
@@ -403,18 +424,18 @@ mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int blend_bits, int k, int k_shi
 	return pl.mi;
 }
 
-mm_idx_t *mm_idx_build(const char *fn, int w, int blend_bits, int k, int k_shift, int flag, int isMinimizer, int n_threads) // a simpler interface; deprecated
+mm_idx_t *mm_idx_build(const char *fn, int w, int blend_bits, int k, int k_shift, int flag, int n_neighbors, int n_threads) // a simpler interface; deprecated
 {
 	mm_bseq_file_t *fp;
 	mm_idx_t *mi;
 	fp = mm_bseq_open(fn);
 	if (fp == 0) return 0;
-	mi = mm_idx_gen(fp, w, blend_bits, k, k_shift, 14, flag, 1<<18, isMinimizer, n_threads, UINT64_MAX);
+	mi = mm_idx_gen(fp, w, blend_bits, k, k_shift, 14, flag, 1<<18, n_neighbors, n_threads, UINT64_MAX);
 	mm_bseq_close(fp);
 	return mi;
 }
 
-mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int is_hpc, int isMinimizer, int bucket_bits, int n, const char **seq, const char **name)
+mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors, int is_hpc, int bucket_bits, int n, const char **seq, const char **name)
 {
 	uint64_t sum_len = 0;
 	mm128_v a = {0,0,0};
@@ -428,7 +449,7 @@ mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int is_hpc, int 
 	if (is_hpc) flag |= MM_I_HPC;
 	if (name == 0) flag |= MM_I_NO_NAME;
 	if (bucket_bits < 0) bucket_bits = 14;
-	mi = mm_idx_init(w, blend_bits, k, k_shift, bucket_bits, isMinimizer, flag);
+	mi = mm_idx_init(w, blend_bits, k, k_shift, bucket_bits, n_neighbors, flag);
 	mi->n_seq = n;
 	mi->seq = (mm_idx_seq_t*)kcalloc(mi->km, n, sizeof(mm_idx_seq_t)); // ->seq is allocated from km
 	mi->S = (uint32_t*)calloc((sum_len + 7) / 8, 4);
@@ -455,8 +476,7 @@ mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int is_hpc, int 
 		sum_len += p->len;
 		if (p->len > 0){
 			a.n = 0;
-            //@IMPORTANT: Fixed parameters here
-			mm_sketch(0, s, p->len, w, blend_bits, k, k_shift, i, is_hpc, isMinimizer, &a);
+			mm_sketch(0, s, p->len, w, blend_bits, k, k_shift, n_neighbors, i, is_hpc, &a);
 			mm_idx_add(mi, a.n, a.a);
 		}
 	}
@@ -473,7 +493,7 @@ void mm_idx_dump(FILE *fp, const mm_idx_t *mi)
 	uint64_t sum_len = 0;
 	uint32_t x[8], i;
 
-	x[0] = mi->w, x[1] = mi->k, x[2] = mi->b, x[3] = mi->n_seq, x[4] = mi->flag, x[5] = mi->blend_bits, x[6] = mi->k_shift, x[7] = mi->isMinimizer;
+	x[0] = mi->w, x[1] = mi->k, x[2] = mi->b, x[3] = mi->n_seq, x[4] = mi->flag, x[5] = mi->blend_bits, x[6] = mi->k_shift, x[7] = mi->n_neighbors;
 	fwrite(MM_IDX_MAGIC, 1, 4, fp);
 	fwrite(x, 4, 8, fp);
 	for (i = 0; i < mi->n_seq; ++i) {
@@ -624,7 +644,7 @@ mm_idx_t *mm_idx_reader_read(mm_idx_reader_t *r, int n_threads)
 		if (mi && mm_verbose >= 2 && (mi->k != r->opt.k || mi->w != r->opt.w || (mi->flag&MM_I_HPC) != (r->opt.flag&MM_I_HPC)))
 			fprintf(stderr, "[WARNING]\033[1;31m Indexing parameters (-k, -w or -H) overridden by parameters used in the prebuilt index.\033[0m\n");
 	} else
-		mi = mm_idx_gen(r->fp.seq, r->opt.w, r->opt.blend_bits, r->opt.k, r->opt.k_shift, r->opt.bucket_bits, r->opt.flag, r->opt.mini_batch_size, r->opt.isMinimizer, n_threads, r->opt.batch_size);
+		mi = mm_idx_gen(r->fp.seq, r->opt.w, r->opt.blend_bits, r->opt.k, r->opt.k_shift, r->opt.bucket_bits, r->opt.flag, r->opt.mini_batch_size, r->opt.n_neighbors, n_threads, r->opt.batch_size);
 	if (mi) {
 		if (r->fp_out) mm_idx_dump(r->fp_out, mi);
 		mi->index = r->n_parts++;

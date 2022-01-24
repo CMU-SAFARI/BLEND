@@ -6,7 +6,7 @@ void mm_idxopt_init(mm_idxopt_t *opt)
 {
 	memset(opt, 0, sizeof(mm_idxopt_t));
     opt->k = 15, opt->w = 500, opt->flag = 0;
-    opt->k_shift = 1, opt->blend_bits = 0, opt->isMinimizer = 10;
+    opt->k_shift = 1, opt->blend_bits = 0, opt->n_neighbors = 10;
 	opt->bucket_bits = 14;
 	opt->mini_batch_size = 50000000;
 	opt->batch_size = 4000000000ULL;
@@ -20,6 +20,7 @@ void mm_mapopt_init(mm_mapopt_t *opt)
 	opt->min_mid_occ = 10;
 	opt->max_mid_occ = 1000000;
 	opt->sdust_thres = 0; // no SDUST masking
+	opt->q_occ_frac = 0.01f;
 
 	opt->min_cnt = 3;
 	opt->min_chain_score = 40;
@@ -33,6 +34,7 @@ void mm_mapopt_init(mm_mapopt_t *opt)
 	opt->rmq_rescue_size = 1000;
 	opt->rmq_rescue_ratio = 0.1f;
 	opt->chain_gap_scale = 0.8f;
+	opt->chain_skip_scale = 0.0f;
 	opt->max_max_occ = 4095;
 	opt->occ_dist = 500;
 
@@ -53,11 +55,13 @@ void mm_mapopt_init(mm_mapopt_t *opt)
 	opt->max_clip_ratio = 1.0f;
 	opt->mini_batch_size = 500000000;
 	opt->max_sw_mat = 100000000;
+	opt->cap_kalloc = 1000000000;
+
+	opt->rank_min_len = 500;
+	opt->rank_frac = 0.9f;
 
 	opt->pe_ori = 0; // FF
 	opt->pe_bonus = 33;
-    
-    opt->k_shift = 1, opt->blend_bits = 0, opt->isMinimizer = 10;
 }
 
 void mm_mapopt_update(mm_mapopt_t *opt, const mm_idx_t *mi)
@@ -71,6 +75,7 @@ void mm_mapopt_update(mm_mapopt_t *opt, const mm_idx_t *mi)
 		if (opt->max_mid_occ > opt->min_mid_occ && opt->mid_occ > opt->max_mid_occ)
 			opt->mid_occ = opt->max_mid_occ;
 	}
+	if (opt->bw_long < opt->bw) opt->bw_long = opt->bw;
 	if (mm_verbose >= 3)
 		fprintf(stderr, "[M::%s::%.3f*%.2f] mid_occ = %d\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), opt->mid_occ);
 }
@@ -83,98 +88,91 @@ void mm_mapopt_max_intron_len(mm_mapopt_t *opt, int max_intron_len)
 
 int mm_set_opt(const char *presetX, const char *presetGen, mm_idxopt_t *io, mm_mapopt_t *mo)
 {
-    if (presetX == 0) {
-        mm_idxopt_init(io);
-        mm_mapopt_init(mo);
-    } else if (strcmp(presetX, "map-ont") == 0) {
-        io->flag = 0, io->k = 15; io->w = 10;
-        io->blend_bits = 30; io->isMinimizer = 3;
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-    } else if (strcmp(presetX, "ava-ont") == 0) {
-        io->flag = 0, io->k = 15, io->w = 20;
-        io->blend_bits = 30; io->isMinimizer = 3;
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-        mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
-        mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
-        mo->bw = mo->bw_long = 2000;
-        mo->occ_dist = 0;
-    } else if (strcmp(presetX, "map-pb") == 0) {
-        io->flag |= MM_I_HPC, io->k = 25; io->w = 10;
-        io->blend_bits = 32; io->isMinimizer = 3;
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-    } else if (strcmp(presetX, "ava-pb") == 0) {
-        io->flag |= MM_I_HPC, io->k = 19; io->w = 20;
-        io->blend_bits = 32; io->isMinimizer = 3;
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-        mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
-        mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
-        mo->bw_long = mo->bw;
-        mo->occ_dist = 0;
-    } else if (strcmp(presetX, "map-hifi") == 0){
-        io->flag = 0, io->k = 15, io->w = 500;
-        if(presetGen && strcmp(presetGen, "human") == 0){
-            io->k = 19;
-            io->blend_bits = 38; io->isMinimizer = 100;
-        }else if(presetGen && strcmp(presetGen, "bacteria") == 0){
-            io->blend_bits = 30; io->isMinimizer = 3;
-        }else{
-            io->blend_bits = 30; io->isMinimizer = 5;
-        }
-        
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-        mo->max_gap = 10000;
-        mo->a = 1, mo->b = 4, mo->q = 6, mo->q2 = 26, mo->e = 2, mo->e2 = 1;
-        mo->occ_dist = 500;
-        mo->min_mid_occ = 50, mo->max_mid_occ = 500;
-        mo->min_dp_max = 200;
+	if (presetX == 0) {
+		mm_idxopt_init(io);
+		mm_mapopt_init(mo);
+	} else if (strcmp(presetX, "map-ont") == 0) {
+		io->flag = 0, io->k = 15; io->w = 10;
+		io->blend_bits = 30; io->n_neighbors = 3;
+	} else if (strcmp(presetX, "ava-ont") == 0) {
+		io->flag = 0, io->k = 15, io->w = 20;
+		io->blend_bits = 30; io->n_neighbors = 3;
+		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
+		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
+		mo->bw = mo->bw_long = 2000;
+		mo->occ_dist = 0;
+	} else if (strcmp(presetX, "map-pb") == 0) {
+		io->flag |= MM_I_HPC, io->k = 25; io->w = 10;
+		io->blend_bits = 32; io->n_neighbors = 3;
+	} else if (strcmp(presetX, "ava-pb") == 0) {
+		io->flag |= MM_I_HPC, io->k = 19; io->w = 20;
+		io->blend_bits = 32; io->n_neighbors = 3;
+		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
+		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
+		mo->bw_long = mo->bw;
+		mo->occ_dist = 0;
+	} else if (strcmp(presetX, "map-hifi") == 0){
+		io->flag = 0, io->k = 15, io->w = 500;
+		if(presetGen && strcmp(presetGen, "human") == 0){
+			io->k = 19;
+			io->blend_bits = 38; io->n_neighbors = 100;
+		}else if(presetGen && strcmp(presetGen, "bacteria") == 0){
+			io->blend_bits = 30; io->n_neighbors = 3;
+		}else{
+			io->blend_bits = 30; io->n_neighbors = 5;
+		}
+
+		mo->max_gap = 10000;
+		mo->a = 1, mo->b = 4, mo->q = 6, mo->q2 = 26, mo->e = 2, mo->e2 = 1;
+		mo->occ_dist = 500;
+		mo->min_mid_occ = 50, mo->max_mid_occ = 500;
+		mo->min_dp_max = 200;
     } else if (strcmp(presetX, "ava-hifi") == 0){
-        io->flag = 0, io->k = 15; io->w = 500;
-        if(presetGen && strcmp(presetGen, "human") == 0){
-            io->k = 19;
-            io->blend_bits = 38; io->isMinimizer = 10;
-        }else if(presetGen && strcmp(presetGen, "eukaryote") == 0){
-            io->blend_bits = 30; io->isMinimizer = 10;
-        }else{
-            io->blend_bits = 30; io->isMinimizer = 5;
-        }
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-        
-        mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
-        mo->min_chain_score = 100;
-//        mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
-        mo->bw_long = mo->bw;
-        mo->occ_dist = 0;
+		io->flag = 0, io->k = 15; io->w = 500;
+		if(presetGen && strcmp(presetGen, "human") == 0){
+			io->k = 19;
+			io->blend_bits = 38; io->n_neighbors = 10;
+		}else if(presetGen && strcmp(presetGen, "eukaryote") == 0){
+			io->blend_bits = 30; io->n_neighbors = 10;
+		}else{
+			io->blend_bits = 30; io->n_neighbors = 5;
+		}
+
+		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
+		mo->min_chain_score = 100;
+//		mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
+		mo->bw_long = mo->bw;
+		mo->occ_dist = 0;
     } else if (strcmp(presetX, "short") == 0 || strcmp(presetX, "sr") == 0) {
-        io->flag = 0, io->k = 21, io->w = 11;
-        io->blend_bits = 32; io->isMinimizer = 3;
-        mo->blend_bits = io->blend_bits; mo->isMinimizer = io->isMinimizer;
-        mo->flag |= MM_F_SR | MM_F_FRAG_MODE | MM_F_NO_PRINT_2ND | MM_F_2_IO_THREADS | MM_F_HEAP_SORT;
-        mo->pe_ori = 0<<1|1; // FR
-        mo->a = 2, mo->b = 8, mo->q = 12, mo->e = 2, mo->q2 = 24, mo->e2 = 1;
-        mo->zdrop = mo->zdrop_inv = 100;
-        mo->end_bonus = 10;
-        mo->max_frag_len = 800;
-        mo->max_gap = 100;
-        mo->bw = mo->bw_long = 100;
-        mo->pri_ratio = 0.5f;
-        mo->min_cnt = 2;
-        mo->min_chain_score = 25;
-        mo->min_dp_max = 40;
-        mo->best_n = 20;
-        mo->mid_occ = 1000;
-        mo->max_occ = 5000;
-        mo->mini_batch_size = 50000000;
+		io->flag = 0, io->k = 21, io->w = 11;
+		io->blend_bits = 32; io->n_neighbors = 3;
+		mo->flag |= MM_F_SR | MM_F_FRAG_MODE | MM_F_NO_PRINT_2ND | MM_F_2_IO_THREADS | MM_F_HEAP_SORT;
+		mo->pe_ori = 0<<1|1; // FR
+		mo->a = 2, mo->b = 8, mo->q = 12, mo->e = 2, mo->q2 = 24, mo->e2 = 1;
+		mo->zdrop = mo->zdrop_inv = 100;
+		mo->end_bonus = 10;
+		mo->max_frag_len = 800;
+		mo->max_gap = 100;
+		mo->bw = mo->bw_long = 100;
+		mo->pri_ratio = 0.5f;
+		mo->min_cnt = 2;
+		mo->min_chain_score = 25;
+		mo->min_dp_max = 40;
+		mo->best_n = 20;
+		mo->mid_occ = 1000;
+		mo->max_occ = 5000;
+		mo->mini_batch_size = 50000000;
     } else if (strncmp(presetX, "splice", 6) == 0 || strcmp(presetX, "cdna") == 0) {
-        io->flag = 0, io->k = 15, io->w = 5;
-        mo->flag |= MM_F_SPLICE | MM_F_SPLICE_FOR | MM_F_SPLICE_REV | MM_F_SPLICE_FLANK;
-        mo->max_sw_mat = 0;
-        mo->max_gap = 2000, mo->max_gap_ref = mo->bw = mo->bw_long = 200000;
-        mo->a = 1, mo->b = 2, mo->q = 2, mo->e = 1, mo->q2 = 32, mo->e2 = 0;
-        mo->noncan = 9;
-        mo->junc_bonus = 9;
-        mo->zdrop = 200, mo->zdrop_inv = 100; // because mo->a is halved
-        if (strcmp(presetX, "splice:hq") == 0)
-            mo->junc_bonus = 5, mo->b = 4, mo->q = 6, mo->q2 = 24;
+		io->flag = 0, io->k = 15, io->w = 5;
+		mo->flag |= MM_F_SPLICE | MM_F_SPLICE_FOR | MM_F_SPLICE_REV | MM_F_SPLICE_FLANK;
+		mo->max_sw_mat = 0;
+		mo->max_gap = 2000, mo->max_gap_ref = mo->bw = mo->bw_long = 200000;
+		mo->a = 1, mo->b = 2, mo->q = 2, mo->e = 1, mo->q2 = 32, mo->e2 = 0;
+		mo->noncan = 9;
+		mo->junc_bonus = 9;
+		mo->zdrop = 200, mo->zdrop_inv = 100; // because mo->a is halved
+		if (strcmp(presetX, "splice:hq") == 0)
+			mo->junc_bonus = 5, mo->b = 4, mo->q = 6, mo->q2 = 24;
     } else return -1;
 	return 0;
 }
@@ -241,6 +239,11 @@ int mm_check_opt(const mm_idxopt_t *io, const mm_mapopt_t *mo)
 	if ((mo->flag & MM_F_NO_PRINT_2ND) && (mo->flag & MM_F_ALL_CHAINS)) {
 		if (mm_verbose >= 1)
 			fprintf(stderr, "[ERROR]\033[1;31m -X/-P and --secondary=no can't be applied at the same time\033[0m\n");
+		return -5;
+	}
+	if ((mo->flag & MM_F_QSTRAND) && ((mo->flag & (MM_F_OUT_SAM|MM_F_SPLICE|MM_F_FRAG_MODE)) || (io->flag & MM_I_HPC))) {
+		if (mm_verbose >= 1)
+			fprintf(stderr, "[ERROR]\033[1;31m --qstrand doesn't work with -a, -H, --frag or --splice\033[0m\n");
 		return -5;
 	}
 	return 0;
