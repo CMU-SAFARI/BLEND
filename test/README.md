@@ -284,6 +284,11 @@ cd comparisons/yeast-illumina/read_mapping
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 
+#Generating the data used for evaluating the read mapping accuracy
+bash convert_bam_to_bed-onlycorrect.sh
+bash convert_sam_to_bed-onlycorrect.sh
+bash merge_beds.sh
+
 #Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
 for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
 

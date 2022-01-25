@@ -30,8 +30,32 @@
 *.exe
 *.out
 *.app
+bin/
 
 MacOS-related
 *.DS_Store
 */*.DS_Store
+
+#Ignoring result directories
+test/data/*/
+test/data/*.tar.gz
+test/blasr/*/
+test/blend/*/
+test/conlsh/*/
+test/lra/
+test/mhap/*/
+test/minimap2/*/
+test/winnowmap/*/
+
+test/comparisons/*/read_mapping/*mosdepth*
+test/comparisons/*/read_mapping/*per-base*
+test/comparisons/*/read_mapping/*.breadth
+test/comparisons/*/read_mapping/*.samtools.*
+test/comparisons/*/read_mapping/*.stats
+test/comparisons/*/read_mapping/*.bam*.bed
+
+test/comparisons/*/overlap/dnadiff/
+test/comparisons/*/overlap/quast/
+test/comparisons/*/overlap/*.stats
+test/comparisons/*/overlap/*evaluate.*
 
