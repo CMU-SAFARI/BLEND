@@ -1,4 +1,4 @@
-# Replicating the results in the paper
+# Reproducing the results in the paper
 
 ## Prerequisites
 
@@ -147,7 +147,9 @@ cd ..
 
 We have already created symbolic links for all the files that each tool would generate under the [comparisons](./comparisons/) directory. The subdirectories under `comparisons` are created for each dataset.
 
-We also provide the scripts we use for evaluating the results under the [scripts](./scripts/) directory. Each script is also already linked in the relevant directories so that one could easily run the correct scripts to evaluate the results easily.
+We provide the scripts we use for evaluating the results under the [scripts](./scripts/) directory. Each script is also already linked in the relevant directories so that one could easily run the correct scripts to evaluate the results easily.
+
+We also provide the python code, raw files, and scripts we use for generating the figures we show in the paper. You can change the raw files (i.e., csv files) based on the results newly generated (e.g., performance results). These files are all included in the [figures](./figures/) directory. We explain the subdirectories in more detail below.
 
 Below we explain how to evaluate the results we generate for 1) finding overlapping reads and 2) read mapping.
 
@@ -269,6 +271,10 @@ cd comparisons/yeast-pb-pbsim-200x/read_mapping
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 
+#Generating the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
+#number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
+bash generate_accuracy.sh
+
 #Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
 for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
 
@@ -284,11 +290,6 @@ cd comparisons/yeast-illumina/read_mapping
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 
-#Generating the data used for evaluating the read mapping accuracy
-bash convert_bam_to_bed-onlycorrect.sh
-bash convert_sam_to_bed-onlycorrect.sh
-bash merge_beds.sh
-
 #Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
 for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
 
@@ -297,8 +298,60 @@ cd ../../../
 
 ## Figures
 
+The [figures](./figures/) directory includes two subdirectories for the applications that BLEND is evaluated: 1) [finding overlapping reads](./figures/overlap/) and 2) [read mapping](./figures/read_mapping/). All last-level subdirectories include a script called `run.sh` to generate the figure in PDF format given that all the results are generated previously and the corresponding CSV files are filled accordingly. The CSV files we provide include the results we generate.
+
+`Python 3` and the `numpy`, `pandas`, and `seaborn` packages are suggested to generate these figures.
+
+### Generating the Performance and Peak Memory Usage Figures (Fig. 2 and Fig. 4)
+
+```bash
+#Finding overlapping reads (Figure 2)
+cd figures/overlap/perf/
+bash run.sh
+
+
+cd ../../../
+
+#Read mapping (Figure 4)
+cd figures/read_mapping/perf/
+bash run.sh
+
+cd ../../../
+```
+
+### Generating the Overlap Statistics Figure (Figure 3)
+
+```bash
+#Overlap statistics (Figure 3)
+cd figures/overlap/overlap_stats/
+bash run.sh
+
+cd ../../../
+```
+
+### Generating the GC Content Distribution Figure (Supp. Figure S1)
+
+```bash
+#GC content distribution of assemblies (Supplementary Figure S1)
+cd figures/overlap/gc_dist/
+bash run.sh
+
+cd ../../../
+```
+
+### Generating the Read Mapping Accuracy Figure (Supp. Figure S2)
+
+```bash
+#Read mapping accuracy (Supplementary Figure S2)
+cd figures/read_mapping/accuracy/
+bash run.sh
+
+cd ../../../
+```
+
+### Source of Figures
 We also provide the source we use to generate the figures we report in our submission as well as the original PDFs we use in our paper. The source and the PDFs can be downloaded using the Zenodo link:
 
 ```bash
 wget https://zenodo.org/record/5782892/files/blend_figures.tar.gz
-```
+

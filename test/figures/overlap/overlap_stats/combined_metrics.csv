@@ -1,0 +1,15 @@
+Data,Tool,Number of Overlaps (M),Avg. Overlap Len.,Avg. Seeds
+Human (HiFi),BLEND,118.498,6.927,22.4812
+Human (HiFi),Minimap2,11578,2.81,41.088
+Human (HiFi),MHAP,37239,9.30,45.7744
+D. ananassae (HiFi),BLEND,522.702,3.506,13.7045
+D. ananassae (HiFi),Minimap2,8869,1.23,75.0174
+D. ananassae (HiFi),MHAP,77635,2.12,64.2193
+E. coli (HiFi),BLEND,3.448,6.682,27.4955
+E. coli (HiFi),Minimap2,5.531,5.04,1157.99
+E. coli (HiFi),MHAP,31.055,4.05,355.851
+E. coli (HiFi),BLASR,0.387,8.87,0
+Yeast (PacBio CLR),BLEND,5.180,2.218,5.29378
+Yeast (PacBio CLR),Minimap2,20.194,2.03,8.97229
+Yeast (PacBio CLR),MHAP,13.274,0.58,96.9795
+Yeast (PacBio CLR),BLASR,2.097,1.87,0
