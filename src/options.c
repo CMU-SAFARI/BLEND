@@ -105,7 +105,7 @@ int mm_set_opt(const char *presetX, const char *presetGen, mm_idxopt_t *io, mm_m
 		io->flag |= MM_I_HPC, io->k = 25; io->w = 10;
 		io->blend_bits = 32; io->n_neighbors = 3;
 	} else if (strcmp(presetX, "ava-pb") == 0) {
-		io->flag |= MM_I_HPC, io->k = 19; io->w = 20;
+		io->flag |= MM_I_HPC, io->k = 25; io->w = 20;
 		io->blend_bits = 32; io->n_neighbors = 3;
 		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
 		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;

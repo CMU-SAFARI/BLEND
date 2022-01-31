@@ -267,13 +267,11 @@ cd ../../../
 ```bash
 cd comparisons/yeast-pb-pbsim-200x/read_mapping
 
-#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-read_mapping.sh
-bash summarize-evaluate-read_mapping.sh
-
-#Generating the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
+#This script has multiple phases:
+#1) Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+#2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
 #number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
-bash generate_accuracy.sh
+bash generate_results.sh
 
 #Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
 for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
