@@ -84,6 +84,7 @@ const uint64_t *mm_idx_get(const mm_idx_t *mi, uint64_t minier, int *n)
 	int mask = (1<<mi->b) - 1;
 
 	khint_t k;
+	//minier is the hash value
 	mm_idx_bucket_t *b = &mi->B[minier&mask];
 	idxhash_t *h = (idxhash_t*)b->h;
 	*n = 0;
@@ -103,6 +104,7 @@ const uint64_t *mm_idx_get(const mm_idx_t *mi, uint64_t minier, int *n)
 		return &kh_val(h, k);
 	} else {
 		*n = (uint32_t)kh_val(h, k);
+		//p is position array for minimizers appearing >1 times
 		return &b->p[kh_val(h, k)>>32];
 	}
 }
@@ -123,6 +125,7 @@ void mm_idx_stat(const mm_idx_t *mi)
 		if (h == 0) continue;
 		for (k = 0; k < kh_end(h); ++k)
 			if (kh_exist(h, k)) {
+				//kh_key returns the number of keys for a given key iterator
 				sum += kh_key(h, k)&1? 1 : (uint32_t)kh_val(h, k);
 				if (kh_key(h, k)&1) ++n1;
 			}
@@ -317,7 +320,7 @@ static void mm_idx_add(mm_idx_t *mi, int n, const mm128_t *a)
 {
 	int i, mask = (1<<mi->b) - 1;
 	for (i = 0; i < n; ++i) {
-		mm128_v *p = &mi->B[a[i].x>>14&mask].a;
+		mm128_v *p = &mi->B[a[i].x>>14&mask].a; //a is the (minimizer (x), position array (y))
 		kv_push(mm128_t, 0, *p, a[i]);
 	}
 }
@@ -387,7 +390,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			if (t->l_seq > 0){
 				// printf("%s6 %d %d %s %s\n", __func__, t->l_seq, t->rid, t->name, t->seq);
 				//check "mm_bseq1_t" in bseq.h for the meanings of l_seq etc...
-				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, &s->a);
+				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, p->mi->flag&B_I_SKEWED, p->mi->flag&B_I_STROBEMERS, &s->a);
 			}
 			else if (mm_verbose >= 2)
 				fprintf(stderr, "[WARNING] the length database sequence '%s' is 0\n", t->name);
@@ -398,6 +401,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
     } else if (step == 2) { // dispatch sketch to buckets
     	// printf("%s6\n", __func__);
         step_t *s = (step_t*)in;
+        //add n seeds (a.n) from a target sequence (located in a.a) to the index
 		mm_idx_add(p->mi, s->a.n, s->a.a);
 		kfree(0, s->a.a); free(s);
 	}
@@ -435,7 +439,7 @@ mm_idx_t *mm_idx_build(const char *fn, int w, int blend_bits, int k, int k_shift
 	return mi;
 }
 
-mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors, int is_hpc, int bucket_bits, int n, const char **seq, const char **name)
+mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors, int is_hpc, int is_skewed, int is_strobs, int bucket_bits, int n, const char **seq, const char **name)
 {
 	uint64_t sum_len = 0;
 	mm128_v a = {0,0,0};
@@ -476,7 +480,7 @@ mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors,
 		sum_len += p->len;
 		if (p->len > 0){
 			a.n = 0;
-			mm_sketch(0, s, p->len, w, blend_bits, k, k_shift, n_neighbors, i, is_hpc, &a);
+			mm_sketch(0, s, p->len, w, blend_bits, k, k_shift, n_neighbors, i, is_hpc, is_skewed, is_strobs, &a);
 			mm_idx_add(mi, a.n, a.a);
 		}
 	}

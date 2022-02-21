@@ -173,7 +173,23 @@ int mm_set_opt(const char *presetX, const char *presetGen, mm_idxopt_t *io, mm_m
 		mo->zdrop = 200, mo->zdrop_inv = 100; // because mo->a is halved
 		if (strcmp(presetX, "splice:hq") == 0)
 			mo->junc_bonus = 5, mo->b = 4, mo->q = 6, mo->q2 = 24;
-    } else return -1;
+    } else if (strncmp(presetX, "asm", 3) == 0) {
+		io->flag = 0, io->k = 19, io->w = 500;
+		mo->bw = 1000, mo->bw_long = 100000;
+		mo->max_gap = 10000;
+		mo->flag |= MM_F_RMQ;
+		mo->min_mid_occ = 50, mo->max_mid_occ = 500;
+		mo->min_dp_max = 200;
+		mo->best_n = 50;
+		if (strcmp(presetX, "asm5") == 0) {
+			mo->a = 1, mo->b = 19, mo->q = 39, mo->q2 = 81, mo->e = 3, mo->e2 = 1, mo->zdrop = mo->zdrop_inv = 200;
+		} else if (strcmp(presetX, "asm10") == 0) {
+			mo->a = 1, mo->b = 9, mo->q = 16, mo->q2 = 41, mo->e = 2, mo->e2 = 1, mo->zdrop = mo->zdrop_inv = 200;
+		} else if (strcmp(presetX, "asm20") == 0) {
+			mo->a = 1, mo->b = 4, mo->q = 6, mo->q2 = 26, mo->e = 2, mo->e2 = 1, mo->zdrop = mo->zdrop_inv = 200;
+			io->w = 10;
+		} else return -1;
+	} else return -1;
 	return 0;
 }
 

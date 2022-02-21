@@ -44,6 +44,8 @@
 #define MM_I_HPC          0x1
 #define MM_I_NO_SEQ       0x2
 #define MM_I_NO_NAME      0x4
+#define B_I_SKEWED        0x8
+#define B_I_STROBEMERS    0x10
 
 #define MM_IDX_MAGIC   "MMI\2"
 
@@ -65,7 +67,9 @@
 extern "C" {
 #endif
 
-// emulate 128-bit integers and arrays
+// emulate 128-bit integers and arrays. a is the vector with two (x, y) 64-bit values
+// n is the size of the array
+// m is the allocated items in the memory. when n reaches m, m is increased.
 typedef struct { uint64_t x, y; } mm128_t;
 typedef struct { size_t n, m; mm128_t *a; } mm128_v;
 
@@ -78,7 +82,7 @@ typedef struct {
 } mm_idx_seq_t;
 
 typedef struct {
-	int32_t b, w, k, flag;
+	int32_t b, w, k, flag; //b number of bits of a hash value?
 	int32_t blend_bits, k_shift, n_neighbors;
 	uint32_t n_seq;            // number of reference sequences
 	int32_t index;
@@ -130,7 +134,7 @@ typedef struct {
 
 	int max_qlen;    // max query length
 
-	int bw, bw_long; // bandwidth
+	int bw, bw_long; // bandwidth -- max distance between anchors
 	int max_gap, max_gap_ref; // break a chain if there are no minimizers in a max_gap window
 	int max_frag_len;
 	int max_chain_skip, max_chain_iter;
@@ -303,7 +307,7 @@ void mm_idx_dump(FILE *fp, const mm_idx_t *mi);
  *
  * @return minimap2 index
  */
-mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors, int is_hpc, int bucket_bits, int n, const char **seq, const char **name);
+mm_idx_t *mm_idx_str(int w, int blend_bits, int k, int k_shift, int n_neighbors, int is_hpc, int is_skewed, int is_strobs, int bucket_bits, int n, const char **seq, const char **name);
 
 /**
  * Print index statistics to stderr
@@ -360,6 +364,26 @@ void *mm_tbuf_get_km(mm_tbuf_t *b);
  */
 mm_reg1_t *mm_map(const mm_idx_t *mi, int l_seq, const char *seq, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *name);
 
+/**
+ * Align a query sequence against an index
+ *
+ * This function possibly finds multiple alignments of the query sequence.
+ * The returned array and the mm_reg1_t::p field of each element are allocated
+ * with malloc().
+ *
+ * @param mi         minimap2 index
+ * @param n_segs:    number of query sequences. usually set to 1 by default
+ * @param qlens      length of the query sequence
+ * @param seqs       the query sequences (usually one sequence)
+ * @param n_regs     number of hits
+ * @param regs:      an array of hits (out)
+ * @param b          thread-local buffer; two mm_map_frag() calls shall not use one buffer at the same time!
+ * @param opt        mapping parameters
+ * @param qname       query name, used for all-vs-all overlapping and debugging
+ *
+ * @return an array of hits which need to be deallocated with free() together
+ *         with mm_reg1_t::p of each element. The size is written to _n_regs_.
+ */
 void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **seqs, int *n_regs, mm_reg1_t **regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *qname);
 
 /**

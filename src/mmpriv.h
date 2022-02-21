@@ -38,6 +38,12 @@
 extern "C" {
 #endif
 
+/*
+n: number of occurence of a seed. Can be used to check n > max_occ. This is used to find number of matches in the target sequences for a given query seed.
+q_pos: query seed position
+seg_id: id of the query sequence
+cr: position array of values of target sequence matches
+*/
 typedef struct {
 	uint32_t n;
 	uint32_t q_pos;
@@ -60,11 +66,34 @@ void radix_sort_128x(mm128_t *beg, mm128_t *end);
 void radix_sort_64(uint64_t *beg, uint64_t *end);
 uint32_t ks_ksmall_uint32_t(size_t n, uint32_t arr[], size_t kk);
 
-void mm_sketch_minimizer_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
+void mm_sketch_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
 
-void mm_sketch_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int k_shift, uint32_t rid, int is_hpc, mm128_v *p);
+void mm_sketch_sk_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
 
-void mm_sketch(void *km, const char *str, int len, int w, int blend_bits, int k, int k_shift, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
+// void mm_sketch_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int k_shift, uint32_t rid, int is_hpc, int is_skewed, int is_strobs, mm128_v *p);
+
+/**
+ * Find symmetric (w,k)-minimizers on a DNA sequence
+ *
+ * @param km          thread-local memory pool; using NULL falls back to malloc()
+ * @param str         DNA sequence
+ * @param len         length of $str
+ * @param w           find a hash value for every $w consecutive k-mers
+ * @param blend_bits  blend_bits
+ * @param k           k-mer size
+ * @param n_neighbors should BLEND use minimizers or not. If so, the number tells how many neighbor k-mers should be blended. E.g., if 3, then take 1 minimizer and 2 preceding k-mers to calculate the hash value of a seed
+ * @param rid         reference ID; will be copied to the output $p array
+ * @param is_hpc      homopolymer-compressed or not
+ * @param is_skewed   should BLEND perform skewed hashing
+ * @param is_strobs   should BLEND use n_neighbors many strobemers instead of a (single minimizer k-mer + its neighbor k-mers)
+ * @param p           minimizers
+ *                    p->a[i].x = kMer<<14 | kmerSpan
+ *                    p->a[i].y = rid<<32 | lastPos<<1 | strand
+ *                    where lastPos is the position of the last base of the i-th minimizer,
+ *                    and strand indicates whether the minimizer comes from the top or the bottom strand.
+ *                    Callers may want to set "p->n = 0"; otherwise results are appended to p
+ */
+void mm_sketch(void *km, const char *str, int len, int w, int blend_bits, int k, int k_shift, int n_neighbors, uint32_t rid, int is_hpc, int is_skewed, int is_strobs, mm128_v *p);
 
 mm_seed_t *mm_collect_matches(void *km, int *_n_m, int qlen, int max_occ, int max_max_occ, int dist, const mm_idx_t *mi, const mm128_v *mv, int64_t *n_a, int *rep_len, int *n_mini_pos, uint64_t **mini_pos);
 void mm_seed_mz_flt(void *km, mm128_v *mv, int32_t q_occ_max, float q_occ_frac);

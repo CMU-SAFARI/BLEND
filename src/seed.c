@@ -27,6 +27,12 @@ void mm_seed_mz_flt(void *km, mm128_v *mv, int32_t q_occ_max, float q_occ_frac)
 	mv->n = j;
 }
 
+/*
+n_m_ is not necessarily number of seeds in a query sequence. Instead: number of seeds that appear in both
+query sequence and target sequences.
+returned mm_seed_t 
+however the size of m is still fixed to the number of seeds in query sequence (worst case scenerio)
+*/
 mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, int32_t *n_m_)
 {
 	mm_seed_t *m;
@@ -34,14 +40,16 @@ mm_seed_t *mm_seed_collect_all(void *km, const mm_idx_t *mi, const mm128_v *mv, 
 	int32_t k;
 	m = (mm_seed_t*)kmalloc(km, mv->n * sizeof(mm_seed_t));
 	for (i = k = 0; i < mv->n; ++i) {
-		const uint64_t *cr;
-		mm_seed_t *q;
-		mm128_t *p = &mv->a[i];
+		const uint64_t *cr; //cr is what kh_value(h,k) returns -- values for a key or position array of values in target
+		mm_seed_t *q; //to point to the seed matches in the target sequences based on a query seed
+		mm128_t *p = &mv->a[i]; //query seed
 		//@IMPORTANT: Right now we shift 14 bits to right and take the least significant
 		//32-bits. Some of the most significant bits remain garbage but we could use them
 		//think about it later. -- update: it's now enabled. Subject to change.
 		uint32_t q_pos = (uint32_t)p->y, q_span = p->x & 0x3fff; //@IMPORTANT: 14bits reserved for the span so should use 3fff instead if we can figure out the entire position storage mechanism
 		int t;
+		//we are checking whether (t) we have seeds with the same hash (p->x>>14) value in the index (mi)
+		//t number of target matches for a single query seed
 		cr = mm_idx_get(mi, p->x>>14, &t);
 		if (t == 0) continue; //if there is no match, continue?
 		q = &m[k++];
@@ -108,8 +116,6 @@ mm_seed_t *mm_collect_matches(void *km, int *_n_m, int qlen, int max_occ, int ma
 	*n_mini_pos = 0;
 	*mini_pos = (uint64_t*)kmalloc(km, mv->n * sizeof(uint64_t));
 	m = mm_seed_collect_all(km, mi, mv, &n_m0);
-	//@IMPORTANT: We do not deal with high frequency kmers now because we may intentionally
-	//be generating those high frequency kmers due to the blend values
 	if (dist > 0 && max_max_occ > max_occ) {
 		// printf("%s1\n", __func__);
 		mm_seed_select(n_m0, m, qlen, max_occ, max_max_occ, dist);
@@ -119,6 +125,7 @@ mm_seed_t *mm_collect_matches(void *km, int *_n_m, int qlen, int max_occ, int ma
 			if (m[i].n > max_occ)
 				m[i].flt = 1;
 	}
+	//repacking m (seed matches) again 
 	for (i = 0, n_m = 0, *rep_len = 0, *n_a = 0; i < n_m0; ++i) {
 		mm_seed_t *q = &m[i];
 		//fprintf(stderr, "X\t%d\t%d\t%d\n", q->q_pos>>1, q->n, q->flt);

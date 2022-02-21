@@ -82,6 +82,8 @@ static ko_longopt_t long_options[] = {
     { "k-shift",        ko_required_argument, 355 },
     { "neighbors",      ko_required_argument, 356 },
     { "genome",         ko_required_argument, 357 },
+    { "skewed",         ko_no_argument, 	  358 },
+    { "strobemers",     ko_no_argument, 	  359 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -253,6 +255,8 @@ int main(int argc, char *argv[])
 		else if (c == 354) ipt.blend_bits = atoi(o.arg); // --blend_bits
 		else if (c == 355) ipt.k_shift = atoi(o.arg); // --k_shift
 		else if (c == 356) ipt.n_neighbors = atoi(o.arg); // --neighbors
+		else if (c == 358) ipt.flag |= B_I_SKEWED; // --skewed
+		else if (c == 359) ipt.flag |= B_I_STROBEMERS; // --strobemers
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -341,6 +345,8 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    -w INT       minimizer window size [%d]\n", ipt.w);
 		fprintf(fp_help, "    --neighbors INT Combines INT amount of k-mers to generate a seed. [%d]\n", ipt.n_neighbors);
 		fprintf(fp_help, "    --fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [%d]\n", ipt.blend_bits);
+		// fprintf(fp_help, "    --skewed     use skewed addressing for masking low-confident bits)\n");
+		// fprintf(fp_help, "    --strobemers link minimizers rather than the preceding k-mers of a single minimizer. Number of minimizers to link is defined by --neighbors.)\n");
 		fprintf(fp_help, "    -I NUM       split index for every ~NUM input bases [4G]\n");
 		fprintf(fp_help, "    -d FILE      dump index to FILE []\n");
 		fprintf(fp_help, "  Mapping:\n");

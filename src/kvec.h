@@ -75,6 +75,7 @@ int main() {
 		memcpy((v1).a, (v0).a, sizeof(type) * (v0).n); \
 	} while (0) \
 
+//v is the bucket vector of an index where we push x into it; x is 128-bit value usually
 #define kv_push(type, km, v, x) do { \
 		if ((v).n == (v).m) { \
 			(v).m = (v).m? (v).m<<1 : 2; \

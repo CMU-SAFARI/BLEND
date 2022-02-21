@@ -61,6 +61,7 @@ static int mm_dust_minier(void *km, int n, mm128_t *a, int l_seq, const char *se
 	return k; // the new size
 }
 
+//mm128_v is a 128-bit array (2x 64-bit x,y). n length, m memory allocation.
 static void collect_minimizers(void *km, const mm_mapopt_t *opt, const mm_idx_t *mi, int n_segs, const int *qlens, const char **seqs, mm128_v *mv)
 {
 	int i, n, sum = 0;
@@ -68,7 +69,9 @@ static void collect_minimizers(void *km, const mm_mapopt_t *opt, const mm_idx_t 
 	for (i = n = 0; i < n_segs; ++i) {
 		size_t j;
 
-		mm_sketch(km, seqs[i], qlens[i], mi->w, mi->blend_bits, mi->k, mi->k_shift, mi->n_neighbors, i, mi->flag&MM_I_HPC, mv);
+		/*mv->a[i].x = kMer<<14 | kmerSpan
+ 		mv->a[i].y = rid<<32 | lastPos<<1 | strand*/
+		mm_sketch(km, seqs[i], qlens[i], mi->w, mi->blend_bits, mi->k, mi->k_shift, mi->n_neighbors, i, mi->flag&MM_I_HPC, mi->flag&B_I_SKEWED, mi->flag&B_I_STROBEMERS, mv);
 		for (j = n; j < mv->n; ++j){
 			//last position i value is updated as i+sum (sum of previous qlens)
 			mv->a[j].y += sum << 1;
@@ -186,6 +189,13 @@ static mm128_t *collect_seed_hits_heap(void *km, const mm_mapopt_t *opt, int max
 	return a;
 }
 
+/* 
+n_a number of total matches/hits ()
+n_m number of seeds in m
+Output: a is a 128-bit vector. includes a.a->x (p->x) : reference id, ref position
+and p->y: q_span, q_pos, q_id
+
+*/
 static mm128_t *collect_seed_hits(void *km, const mm_mapopt_t *opt, int max_occ, const mm_idx_t *mi, const char *qname, const mm128_v *mv, int qlen, int64_t *n_a, int *rep_len,
 								  int *n_mini_pos, uint64_t **mini_pos)
 {
@@ -193,6 +203,7 @@ static mm128_t *collect_seed_hits(void *km, const mm_mapopt_t *opt, int max_occ,
 	int i, n_m;
 	mm_seed_t *m;
 	mm128_t *a;
+	//n_a number of matches, m is the allocated array
 	m = mm_collect_matches(km, &n_m, qlen, max_occ, opt->max_max_occ, opt->occ_dist, mi, mv, n_a, rep_len, n_mini_pos, mini_pos);
 	a = (mm128_t*)kmalloc(km, *n_a * sizeof(mm128_t));
 	for (i = 0, *n_a = 0; i < n_m; ++i) {
@@ -251,20 +262,41 @@ static mm_reg1_t *align_regs(const mm_mapopt_t *opt, const mm_idx_t *mi, void *k
 	if (!(opt->flag & MM_F_ALL_CHAINS)) { // don't choose primary mapping(s)
 		mm_set_parent(km, opt->mask_level, opt->mask_len, *n_regs, regs, opt->a * 2 + opt->b, opt->flag&MM_F_HARD_MLEVEL, opt->alt_drop);
 		mm_select_sub(km, opt->pri_ratio, mi->k*2, opt->best_n, 0, opt->max_gap * 0.8, n_regs, regs);
-		mm_set_sam_pri(*n_regs, regs);
+		mm_set_sam_pri(*n_regs, regs);//an array of hits
 	}
 	return regs;
 }
 
+
+/**
+ * Align a query sequence against an index
+ *
+ * This function possibly finds multiple alignments of the query sequence.
+ * The returned array and the mm_reg1_t::p field of each element are allocated
+ * with malloc().
+ *
+ * @param mi         index
+ * @param n_segs:    number of query sequences (usually set to 1 by default)
+ * @param qlens      length of the query sequences
+ * @param seqs       the query sequences (usually one sequence)
+ * @param n_regs     number of hits
+ * @param regs:      an array of hits (out)
+ * @param b          thread-local buffer; two mm_map_frag() calls shall not use one buffer at the same time!
+ * @param opt        mapping parameters
+ * @param qname      query name, used for all-vs-all overlapping and debugging
+ *
+ * @return an array of hits which need to be deallocated with free() together
+ *         with mm_reg1_t::p of each element. The size is written to _n_regs_.
+ */
 void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **seqs, int *n_regs, mm_reg1_t **regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *qname)
 {
 	int i, j, rep_len, qlen_sum, n_regs0, n_mini_pos;
 	int max_chain_gap_qry, max_chain_gap_ref, is_splice = !!(opt->flag & MM_F_SPLICE), is_sr = !!(opt->flag & MM_F_SR);
 	uint32_t hash;
-	int64_t n_a;
+	int64_t n_a; //number of hits
 	uint64_t *u, *mini_pos;
 	mm128_t *a;
-	mm128_v mv = {0,0,0};
+	mm128_v mv = {0,0,0}; //128-bit vector to collect all seeds of a query sequence
 	mm_reg1_t *regs0;
 	km_stat_t kmst;
 	float chn_pen_gap, chn_pen_skip;
@@ -279,11 +311,18 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	hash ^= __ac_Wang_hash(qlen_sum) + __ac_Wang_hash(opt->seed);
 	hash  = __ac_Wang_hash(hash);
 
+	//mv is filled here where we have seeds from the query sequence
 	collect_minimizers(b->km, opt, mi, n_segs, qlens, seqs, &mv);
 	if (opt->q_occ_frac > 0.0f) mm_seed_mz_flt(b->km, &mv, opt->mid_occ, opt->q_occ_frac);
 	if (opt->flag & MM_F_HEAP_SORT) a = collect_seed_hits_heap(b->km, opt, opt->mid_occ, mi, qname, &mv, qlen_sum, &n_a, &rep_len, &n_mini_pos, &mini_pos);
 	else a = collect_seed_hits(b->km, opt, opt->mid_occ, mi, qname, &mv, qlen_sum, &n_a, &rep_len, &n_mini_pos, &mini_pos);
 
+	/*
+	a->x strand (<<63) | rid (<<32) | r_pos
+	a->y q_id (<<SEG_SHIFT = 50) | q_span (<<32) | q_pos (wo the strand info)
+	n_a: number of hits hits
+	n_m number of seeds
+	*/
 	if (mm_dbg_flag & MM_DBG_PRINT_SEED) {
 		fprintf(stderr, "RS\t%d\n", rep_len);
 		for (i = 0; i < n_a; ++i) //for all hits?
@@ -306,10 +345,20 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	chn_pen_skip = opt->chain_skip_scale * 0.01 * mi->k;
 	if (opt->flag & MM_F_RMQ) {
 		// printf("%s1\n", __func__);
+		//with minigraph
 		a = mg_lchain_rmq(opt->max_gap, opt->rmq_inner_dist, opt->bw, opt->max_chain_skip, opt->rmq_size_cap, opt->min_cnt, opt->min_chain_score,
 						  chn_pen_gap, chn_pen_skip, n_a, a, &n_regs0, &u, b->km);
 	} else {
+		//with DP
 		// printf("%s2\n", __func__);
+		/* Input:
+		 *   a[].x: tid<<33 | rev<<32 | tpos
+		 *   a[].y: flags<<40 | q_span<<32 | q_pos
+		 * Output:
+		 *   n_regs0: #chains
+		 *   u[]: score<<32 | #anchors (sum of lower 32 bits of u[] is the returned length of a[])
+		 * input a[] is deallocated on return
+		 */
 		a = mg_lchain_dp(max_chain_gap_ref, max_chain_gap_qry, opt->bw, opt->max_chain_skip, opt->max_chain_iter, opt->min_cnt, opt->min_chain_score,
 						 chn_pen_gap, chn_pen_skip, is_splice, n_segs, n_a, a, &n_regs0, &u, b->km);
 	}
@@ -408,6 +457,24 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 	}
 }
 
+/**
+ * Align a query sequence against an index
+ *
+ * This function possibly finds multiple alignments of the query sequence.
+ * The returned array and the mm_reg1_t::p field of each element are allocated
+ * with malloc().
+ *
+ * @param mi         minimap2 index
+ * @param qlen      length of the query sequence
+ * @param seq        the query sequence
+ * @param n_regs     number of hits (out)
+ * @param b          thread-local buffer; two mm_map() calls shall not use one buffer at the same time!
+ * @param opt        mapping parameters
+ * @param qname       query name, used for all-vs-all overlapping and debugging
+ *
+ * @return an array of hits which need to be deallocated with free() together
+ *         with mm_reg1_t::p of each element. The size is written to _n_regs_.
+ */
 mm_reg1_t *mm_map(const mm_idx_t *mi, int qlen, const char *seq, int *n_regs, mm_tbuf_t *b, const mm_mapopt_t *opt, const char *qname)
 {
 	mm_reg1_t *regs;
