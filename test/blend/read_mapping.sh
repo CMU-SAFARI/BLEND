@@ -13,18 +13,29 @@ PRESETX="map-hifi"
 PRESETGEN="bacteria"
 
 mkdir -p ${OUTDIR}
-bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/read_mapping/"
 PREFIX="pbsim_yeast_200x"
-READS="../data/yeast-pb-pbsim/pbsim_yeast_200x.fastq"
-REF="../data/yeast-pb-pbsim/ref.fa"
+READS="../data/yeast-pb-pbsim2/pbsim_yeast_200x.fasta"
+REF="../data/yeast-pb-pbsim2/ref.fa"
 PRESETX="map-pb"
 PRESETGEN="eukaryote"
 
 mkdir -p ${OUTDIR}
-bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#yeast-ont-pbsim-100x
+OUTDIR="./yeast-ont-pbsim-100x/read_mapping/"
+PREFIX="pbsim_yeast_100x"
+READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fasta"
+REF="../data/yeast-ont-pbsim2/ref.fa"
+PRESETX="map-ont"
+PRESETGEN="eukaryote"
+
+mkdir -p ${OUTDIR}
+/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-illumina
 OUTDIR="./yeast-illumina/read_mapping/"
@@ -47,7 +58,7 @@ PRESETX="map-hifi"
 PRESETGEN="eukaryote"
 
 mkdir -p ${OUTDIR}
-bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #chm13-pb-sequelii-16X
 OUTDIR="./chm13-pb-sequelii-16X/read_mapping/"
@@ -58,5 +69,5 @@ PRESETX="map-hifi"
 PRESETGEN="human"
 
 mkdir -p ${OUTDIR}
-bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${PRESETGEN} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 

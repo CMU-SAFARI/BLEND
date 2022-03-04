@@ -51,8 +51,9 @@ test/comparisons/*/read_mapping/*mosdepth*
 test/comparisons/*/read_mapping/*per-base*
 test/comparisons/*/read_mapping/*.breadth
 test/comparisons/*/read_mapping/*.samtools.*
-test/comparisons/*/read_mapping/*.stats
 test/comparisons/*/read_mapping/*.bam*.bed
+test/comparisons/*/read_mapping/*.stats
+test/comparisons/*/read_mapping/*.mapeval
 test/comparisons/*/read_mapping/*.csv
 test/comparisons/*/read_mapping/figures/
 
@@ -63,4 +64,6 @@ test/comparisons/*/overlap/*evaluate.*
 test/comparisons/*/overlap/figures/
 
 test/figures/*/*/*.pdf
+test/mhap/*.out
+test/mhap/*.err
 

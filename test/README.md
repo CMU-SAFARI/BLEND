@@ -2,13 +2,13 @@
 
 ## Prerequisites
 
-We compare BLEND with Minimap2 (for finding overlapping reads and read mapping), MHAP (for finding overlapping reads), BLASR (for finding overlapping reads and read mapping), Winnowmap (for read mapping), and S-conLSH (for read mapping). We specify the versions we use for each tool in our submission in Supplementary Table S3.
+We compare BLEND with Minimap2 (for finding overlapping reads and read mapping), MHAP (for finding overlapping reads), LRA (for read mapping), Winnowmap (for read mapping), and S-conLSH (for read mapping). We specify the versions we use for each tool in our submission in Supplementary Table S3.
 
 We list the links to download and compile each tool for comparison below:
 
 * [Minimap2 (v2.24)](https://github.com/lh3/minimap2/releases/tag/v2.24)
 * [MHAP (v2.1.3 -- via conda)](https://anaconda.org/bioconda/mhap/2.1.3/download/noarch/mhap-2.1.3-hdfd78af_1.tar.bz2)
-* [BLASR (v5.3.5 -- via conda)](https://anaconda.org/bioconda/blasr/5.3.5/download/linux-64/blasr-5.3.5-0.tar.bz2)
+* [LRA (v1.3.2 -- via conda)](https://anaconda.org/bioconda/lra/1.3.2/download/linux-64/lra-1.3.2-ha140323_0.tar.bz2)
 * [Winnowmap (v2.03 -- via conda)](https://anaconda.org/bioconda/winnowmap/2.03/download/linux-64/winnowmap-2.03-h2e03b76_0.tar.bz2)
 * [S-conLSH (v2.0)](https://github.com/anganachakraborty/S-conLSH-2.0/tree/292fbe0405f10b3ab63fc3a86cba2807597b582e)
 
@@ -22,6 +22,7 @@ We use various tools to process and analyze the data we generate using each tool
 * [bedtools v2.30.0](https://github.com/arq5x/bedtools2/releases/tag/v2.30.0)
 * [mosdepth v0.3.2](https://github.com/brentp/mosdepth/releases/tag/v0.3.2)
 * [QUAST v5.0.2](https://github.com/ablab/quast/releases/tag/quast_5.0.2)
+* [PBSIM2 v2.0.1 -- via conda](https://anaconda.org/bioconda/pbsim2/2.0.1/download/linux-64/pbsim2-2.0.1-h9f5acd7_1.tar.bz2)
 
 We suggest using conda to install these tools with their specified versions as almost all of them are included in the conda repository.
 
@@ -37,7 +38,8 @@ cd data
 bash download-e.coli-pb-sequelii.sh #E. coli PacBio HiFi Dataset (100X)
 bash download-d.ananassae-pb-sequelii.sh #D. ananassae PacBio HiFi Dataset (50X)
 bash download-chm13-pb-sequelii-16X.sh #Human CHM13 PacBio HiFi Dataset (16X)
-bash download-yeast-pb-pbsim.sh #Yeast PacBio CLR Simulated Dataset (200X)
+bash download-yeast-pb-pbsim2.sh #Yeast PacBio CLR Simulated Dataset (200X)
+bash download-yeast-ont-pbsim2.sh #Yeast ONT Simulated Dataset (100X)
 bash download-yeast-illumina.sh #Yeast Illumina Dataset (80X)
 
 cd .. #going back to the test directory
@@ -79,16 +81,6 @@ bash overlap.sh
 cd ..
 ```
 
-### BLASR
-
-Here we run BLASR to find overlapping reads for each dataset.
-
-```bash
-cd blasr
-bash overlap.sh
-cd ..
-```
-
 ## Read Mapping
 
 We run each tool to perform read mapping for each dataset. We use 32 threads for each tool and 8 threads for sorting the BAM files but you can easily change this number in the scripts we use below.
@@ -123,12 +115,12 @@ bash read_mapping.sh
 cd ..
 ```
 
-### BLASR
+### LRA
 
-Here we run BLASR to perform read mapping for each dataset.
+Here we run LRA to perform read mapping for each dataset.
 
 ```bash
-cd blasr
+cd lra
 bash read_mapping.sh
 cd ..
 ```
@@ -213,6 +205,20 @@ for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maxi
 cd ../../../
 ```
 
+* Yeast ONT Simulated Dataset (100X)
+
+```bash
+cd comparisons/yeast-ont-pbsim-100x/overlap
+
+#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+bash evaluate-overlaps-clr.sh .
+
+#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
+for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+
+cd ../../../
+```
+
 ### Read Mapping
 
 Each of the subdirectories under [comparisons](./comparisons/) include a directory called `read_mapping` where we include all the files to compare for a certain dataset. We explain how to evaluate the read mapping results for each dataset below.
@@ -237,7 +243,7 @@ cd ../../../
 ```bash
 cd comparisons/d.ananassae-pb-sequelii/read_mapping
 
-#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 
@@ -252,7 +258,7 @@ cd ../../../
 ```bash
 cd comparisons/chm13-pb-sequelii-16X/read_mapping
 
-#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 
@@ -268,7 +274,24 @@ cd ../../../
 cd comparisons/yeast-pb-pbsim-200x/read_mapping
 
 #This script has multiple phases:
-#1) Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+#1) #Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
+#2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
+#number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
+bash generate_results.sh
+
+#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
+for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+
+cd ../../../
+```
+
+* Yeast ONT Simulated Dataset (100X)
+
+```bash
+cd comparisons/yeast-ont-pbsim-100x/read_mapping
+
+#This script has multiple phases:
+#1) #Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
 #2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
 #number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
 bash generate_results.sh
@@ -284,7 +307,7 @@ cd ../../../
 ```bash
 cd comparisons/yeast-illumina/read_mapping
 
-#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
 bash evaluate-read_mapping.sh
 bash summarize-evaluate-read_mapping.sh
 

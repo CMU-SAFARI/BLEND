@@ -2,7 +2,7 @@
 
 BLEND is a mechanism that can efficiently find fuzzy seed matches between sequences to significantly improve the performance and accuracy while reducing the memory space usage of two important applications: 1) finding overlapping reads and 2) read mapping. Finding fuzzy seed matches enable BLEND to find both 1) exact-matching seeds and 2) highly similar seeds. We integrate the BLEND mechanism into [Minimap2](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850). We make the following changes in the original Minimap2 implementation:
 
-- We enable the Minimap2 implementation so that it can find fuzzy seed matches using the BLEND mechanism as the original implementation can only find the exact-matching seeds between sequences. To this end, we change the [sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c) implementation of Minimap2 so that 1) we can generate the seeds that BLEND finds and 2) generate the hash values for seeds to find fuzzy seed matches.
+- We enable the Minimap2 implementation so that it can find fuzzy seed matches using the BLEND mechanism as the original implementation can only find the exact-matching seeds between sequences. To this end, we change the [sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c) implementation of Minimap2 so that 1) we can generate the seeds by concatanating each minimizer k-mer with its immediately preceding k-mers and 2) generate the hash values for seeds such that a pair of highly similar seeds can have the same hash value to find fuzzy seed matches with a single look-up.
 - We enable the Minimap2 implementation to use seeds longer than 256 bases so that it can store longer seeds when using BLEND by combining the minimizer k-mer with *many* neighbor k-mers (e.g., hundreds), if necessary. The current implementation of Minimap2 allocates 8-bits to store seed lengths up to 256 characters. We change this requirement in various places of the implementation (e.g., [line 112 in sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L112) and [line 239 in index.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/index.c#L239)) so that BLEND can use 14 bits to store seed lengths up to 16384 characters. We do this because BLEND merges many k-mers into a single seed, which may be much larger than a 256 character-long sequence.
 
 ## Cloning the source code
@@ -21,7 +21,7 @@ git clone --recurse-submodules https://github.com/CMU-SAFARI/BLEND.git blend
 
 ## Compiling from the source code
 
-Compilation process is similar to Minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation). We keep the support for using the SIMD instructions that Minimap2 implements.
+Compilation process is similar to Minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation).
 
 Before compiling BLEND:
 
@@ -31,12 +31,6 @@ To compile:
 
 ```bash
 cd blend && make
-```
-
-To compile the SIMD-compatible version:
-
-```bash
-cd blend && make simd
 ```
 
 If the compilation is successful, the binary called `blend` will be located under `bin`.
@@ -105,4 +99,13 @@ BLEND also provides preset options. Some of these preset options also depend on 
 ## Reproducing the results in the paper
 
 We explain how to reproduce the results we show in the BLEND paper in the [test directory](./test/).
+
+## <a name="cite"></a>Citing BLEND
+
+If you use BLEND in your work, please cite:
+
+> Can Firtina, Jisung Park, Jeremie S. Kim, Mohammed Alser, Damla Senol Cali, Taha Shahroodi, 
+> Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu
+> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches"
+> arXiv preprint **arXiv**:2112.08687 (2021). [DOI](https://doi.org/10.48550/arXiv.2112.08687)
 

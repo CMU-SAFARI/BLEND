@@ -15,8 +15,18 @@ bash ../scripts/blend-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${PRESETX} ${PRESE
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/overlap/"
 PREFIX="pbsim_yeast_200x"
-READS="../data/yeast-pb-pbsim/pbsim_yeast_200x.fastq"
+READS="../data/yeast-pb-pbsim2/pbsim_yeast_200x.fasta"
 PRESETX="ava-pb"
+PRESETGEN="eukaryote"
+
+mkdir -p ${OUTDIR}
+bash ../scripts/blend-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${PRESETX} ${PRESETGEN} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#yeast-ont-pbsim-100x
+OUTDIR="./yeast-ont-pbsim-100x/overlap/"
+PREFIX="pbsim_yeast_100x"
+READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fasta"
+PRESETX="ava-ont"
 PRESETGEN="eukaryote"
 
 mkdir -p ${OUTDIR}

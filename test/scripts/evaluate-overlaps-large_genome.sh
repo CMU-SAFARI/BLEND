@@ -13,10 +13,6 @@ quast -t 32 -m 0 -o ${BASE_DIR}/quast --large -r ${BASE_DIR}/ref.fa -k ${BASE_DI
 
 for i in `echo ${BASE_DIR}/*.paf`; do fname=`basename $i | sed s/.paf//g`; bash ../../../scripts/overlap_stats.sh ${BASE_DIR}/$fname; done
 
-bash ../../../scripts/overlap_stats_blastout.sh ${BASE_DIR}/mhap
-
-bash ../../../scripts/overlap_stats_blastout.sh ${BASE_DIR}/blasr
-
 echo 'Dnadiff results (genome fraction and average identity is based on AlignedBases and AvgIdentity (M-to-M) in the second line of AvgIdentity:';
 for i in `echo ${BASE_DIR}/dnadiff/*.report`; do echo $i; grep "AlignedBases" $i; grep "AvgIdentity" $i | head -2; done
 

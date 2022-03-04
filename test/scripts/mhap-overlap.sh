@@ -4,6 +4,8 @@ OUTDIR=$1
 PREFIX=$2
 READS=$3
 THREAD=$4
+SCRIPT_LOC=$5
 
-/usr/bin/time -v -p -o "${OUTDIR}/${PREFIX}_mhap.time" mhap --num-threads ${THREAD} -s ${READS} -q ${READS} > ${OUTDIR}/${PREFIX}_mhap.out
+/usr/bin/time -v -p -o "${OUTDIR}/${PREFIX}_mhap.time" mhap --store-full-id --num-threads ${THREAD} -s ${READS} -q ${READS} | "${SCRIPT_LOC}/mhap2paf.pl" > ${OUTDIR}/${PREFIX}_mhap.paf
+/usr/bin/time -v -p -o "${OUTDIR}/${PREFIX}_miniasm.time" miniasm -s 500 -c 2 -f ${READS} "${OUTDIR}/${PREFIX}_mhap.paf" | awk '/^S/{print ">"$2"\n"$3}' | fold > "${OUTDIR}/${PREFIX}_mhap_contigs.fasta"
 
