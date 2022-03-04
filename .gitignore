@@ -42,7 +42,7 @@ test/data/*.tar.gz
 test/blasr/*/
 test/blend/*/
 test/conlsh/*/
-test/lra/
+test/lra/*/
 test/mhap/*/
 test/minimap2/*/
 test/winnowmap/*/
