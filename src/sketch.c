@@ -156,32 +156,29 @@ void mm_sketch_blend(void *km,
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56)); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
     
     int blndK = (blend_bits>0)?blend_bits:2*k;
-    uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, kmer[2] = {0,0}, hkmer[2] = {0,0};
+    uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, kmer[2] = {0,0}, hkmer = 0, sMask = (1ULL<<14)-1;
     int i, j, l, buf_pos, min_pos, kmer_span = 0, tot_span;
     mm128_t buf[w];
     mm128_t min = { UINT64_MAX, UINT64_MAX };
     tiny_queue_t tq;
     
     //BLEND Variables
-    uint64_t blendVal = 0, r_blendVal = 0;
-    b176_t blndBuf[n_neighbors];
-    int f_blendpos = -1, l_blendpos = 0; //first (oldest) and last positions
-    //this usually moves like ....(lpos)(fpos).... then ....(lpos).(fpos)... and .....(lpos)(fpos)...
+    uint64_t blendVal = 0;
+    mm128_t blndBuf[n_neighbors];
+    int f_blendpos = 0;
     
-    //SSE4-related variables
+    //SIMD-related variables
     __m256i ma = _mm256_set1_epi8(1);
     __m256i mb = _mm256_set1_epi8(-1);
     __m256i blndcnt_lsb = _mm256_set1_epi8(0);
     __m256i blndcnt_msb = _mm256_set1_epi8(0);
-    __m256i r_blndcnt_lsb = _mm256_set1_epi8(0);
-    __m256i r_blndcnt_msb = _mm256_set1_epi8(0);
     
     memset(buf, 0xff, w*16);
-    memset(blndBuf, 0, n_neighbors*22); //176/8
+    memset(blndBuf, 0, n_neighbors*16); //176/8
     memset(&tq, 0, sizeof(tiny_queue_t));
     kv_resize(mm128_t, km, *p, p->n + len/w);
 
-    for (i = l = l_blendpos = buf_pos = min_pos = 0; i < len; ++i) {
+    for (i = l = f_blendpos = buf_pos = min_pos = 0; i < len; ++i) {
         int c = seq_nt4_table[(uint8_t)str[i]];
         mm128_t info = { UINT64_MAX, UINT64_MAX };
         if (c < 4) { // not an ambiguous base
@@ -201,48 +198,35 @@ void mm_sketch_blend(void *km,
             
             kmer[0] = ((kmer[0] << 2 | c) & mask); // forward k-mer
             kmer[1] = ((kmer[1] >> 2) | (3ULL^c) << shift1); //reverse k-mer k-mer
+            if (kmer[0] == kmer[1]) continue; // skip "symmetric k-mers" as we don't know it strand
+            z = kmer[0] < kmer[1]? 0 : 1; // strand
 
             ++l;
             if (l >= k && kmer_span < 256){
                 
-                //@IMPORTANT compute hash values in SSE4 as well?
-                hkmer[0] = hash64(kmer[0], blndMask);
-                hkmer[1] = hash64(kmer[1], blndMask);
-                if(f_blendpos == -1) f_blendpos = l_blendpos;
+                //@IMPORTANT compute hash values in SIMD as well?
+                hkmer = hash64(kmer[z], blndMask);
+                blndBuf[f_blendpos].x = hkmer << 14 | kmer_span;
+                blndBuf[f_blendpos].y = i;
+
+                if(++f_blendpos == n_neighbors) f_blendpos = 0;
 
                 if(l >= n_neighbors+k-1){
 
-                    blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], blndBuf[f_blendpos].x, mask32, blndK);
-                    r_blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1], blndBuf[f_blendpos].y, mask32, blndK);
+                    blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer, 
+                                                  blndBuf[f_blendpos].x>>14, mask32, blndK);
 
-                    tot_span = i - blndBuf[f_blendpos].i + blndBuf[f_blendpos].k;
+                    //@IMPORTANT: here we use tot_span but we could use only kmer_span too
+                    //it would be more precise but would lead to large gaps between seeds.
+                    tot_span = i - (uint32_t)blndBuf[f_blendpos].y + (uint32_t)blndBuf[f_blendpos].x&sMask;
                     
-                    if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                    
-                    if(blendVal < r_blendVal){
-                        info.x = blendVal << 14 | tot_span;
-                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 0;
-                    }else{
-                        info.x = r_blendVal << 14 | tot_span;
-                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 1;
-                    }
-                }else{
-
-                    calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], mask32, blndK);
-                    calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1], mask32, blndK);
-                    //@IMPORTANT: should we really include the first few hash values in the index?
-                    z = (kmer[0] < kmer[1])?0:1;
-                    info.x = hkmer[z] << 14 | kmer_span;
+                    info.x = blendVal << 14 | tot_span;
                     info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
-                }
+                }else
+                    calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer, mask32, blndK);
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0;
         buf[buf_pos] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
-        blndBuf[l_blendpos].x = hkmer[0];
-        blndBuf[l_blendpos].y = hkmer[1];
-        blndBuf[l_blendpos].i = i;
-        blndBuf[l_blendpos].k = kmer_span;
-        if(++l_blendpos == n_neighbors) l_blendpos = 0;
         
         if (l == w + k - 1 && min.x != UINT64_MAX) { // special case for the first window - because identical k-mers are not stored yet
             for (j = buf_pos + 1; j < w; ++j)
@@ -372,14 +356,16 @@ void mm_sketch_sb_blend(void *km,
             for (j = buf_pos + 1; j < w; ++j){
                 if (f_min.x == f_buf[j].x && f_buf[j].y != f_min.y) {                   
                     f_blndBuf[f_blendpos].x = f_buf[j].x;
-                    f_blndBuf[f_blendpos].y = f_buf[j].y;
+                    f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
+                    tot_span = f_blndBuf[f_blendpos].y;
 
                     if(++f_blendpos == n_neighbors) f_blendpos = 0;
                     if(++f_nm >= n_neighbors){
                         blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
                                                    f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                        info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                        info.y = f_blndBuf[f_blendpos].y;
+                        tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = f_buf[j].y;
                         kv_push(mm128_t, km, *p, info);
                     }else //only addition of f_buf[j]
                         calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32, blndK);
@@ -388,14 +374,16 @@ void mm_sketch_sb_blend(void *km,
             for (j = 0; j < buf_pos; ++j)
                 if (f_min.x == f_buf[j].x && f_buf[j].y != f_min.y) {
                     f_blndBuf[f_blendpos].x = f_buf[j].x;
-                    f_blndBuf[f_blendpos].y = f_buf[j].y;
+                    f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
+                    tot_span = f_blndBuf[f_blendpos].y;
 
                     if(++f_blendpos == n_neighbors) f_blendpos = 0;
                     if(++f_nm >= n_neighbors){
                         blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
                                                    f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                        info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                        info.y = f_blndBuf[f_blendpos].y;
+                        tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = f_buf[j].y;
                         kv_push(mm128_t, km, *p, info);
                     }else
                         calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32, blndK);
@@ -405,14 +393,16 @@ void mm_sketch_sb_blend(void *km,
         if (f_info.x <= f_min.x) { // a new minimum; then write the old f_min
             if (l >= w + k && f_min.x != UINT64_MAX) {
                 f_blndBuf[f_blendpos].x = f_min.x;
-                f_blndBuf[f_blendpos].y = f_min.y;
+                f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
+                tot_span = f_blndBuf[f_blendpos].y;
 
                 if(++f_blendpos == n_neighbors) f_blendpos = 0;
                 if(++f_nm >= n_neighbors){
                     blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
                                                f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                    info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                    info.y = f_blndBuf[f_blendpos].y;
+                    tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                    info.x = blendVal << 14 | tot_span;
+                    info.y = f_min.y;
                     kv_push(mm128_t, km, *p, info);
                 }else 
                     calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14, mask32, blndK);
@@ -421,14 +411,16 @@ void mm_sketch_sb_blend(void *km,
         } else if (buf_pos == f_min_pos) { // old f_min has moved outside the window
             if (l >= w + k - 1 && f_min.x != UINT64_MAX) {
                 f_blndBuf[f_blendpos].x = f_min.x;
-                f_blndBuf[f_blendpos].y = f_min.y;
+                f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
+                tot_span = f_blndBuf[f_blendpos].y;
 
                 if(++f_blendpos == n_neighbors) f_blendpos = 0;
                 if(++f_nm >= n_neighbors){
                     blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
                                                f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                    info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                    info.y = f_blndBuf[f_blendpos].y;
+                    tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                    info.x = blendVal << 14 | tot_span;
+                    info.y = f_min.y;
                     kv_push(mm128_t, km, *p, info);
                 }else 
                     calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14, mask32, blndK);
@@ -441,14 +433,16 @@ void mm_sketch_sb_blend(void *km,
                 for (j = buf_pos + 1; j < w; ++j) // these two loops make sure the output is sorted
                     if (f_min.x == f_buf[j].x && f_min.y != f_buf[j].y) {
                         f_blndBuf[f_blendpos].x = f_buf[j].x;
-                        f_blndBuf[f_blendpos].y = f_buf[j].y;
+                        f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
+                        tot_span = f_blndBuf[f_blendpos].y;
 
                         if(++f_blendpos == n_neighbors) f_blendpos = 0;
                         if(++f_nm >= n_neighbors){
                             blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
                                                        f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                            info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                            info.y = f_blndBuf[f_blendpos].y;
+                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = f_buf[j].y;
                             kv_push(mm128_t, km, *p, info);
                         }else 
                             calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32,blndK);
@@ -456,14 +450,16 @@ void mm_sketch_sb_blend(void *km,
                 for (j = 0; j <= buf_pos; ++j)
                     if (f_min.x == f_buf[j].x && f_min.y != f_buf[j].y) {
                         f_blndBuf[f_blendpos].x = f_buf[j].x;
-                        f_blndBuf[f_blendpos].y = f_buf[j].y;
+                        f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
+                        tot_span = f_blndBuf[f_blendpos].y;
 
                         if(++f_blendpos == n_neighbors) f_blendpos = 0;
                         if(++f_nm >= n_neighbors){
                             blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
                                                        f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                            info.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-                            info.y = f_blndBuf[f_blendpos].y;
+                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = f_buf[j].y;
                             kv_push(mm128_t, km, *p, info);
                         }else 
                             calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32,blndK);
@@ -475,14 +471,15 @@ void mm_sketch_sb_blend(void *km,
 
     if (f_min.x != UINT64_MAX){
         f_blndBuf[f_blendpos].x = f_min.x;
-        f_blndBuf[f_blendpos].y = f_min.y;
+        f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
+        tot_span = f_blndBuf[f_blendpos].y;
 
         if(++f_blendpos == n_neighbors) f_blendpos = 0;
         if(++f_nm >= n_neighbors){
             blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
                                        f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-            f_min.x = blendVal << 14 | f_blndBuf[f_blendpos].x&sMask;
-            f_min.y = f_blndBuf[f_blendpos].y;
+            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+            f_min.x = blendVal << 14 | tot_span;
             kv_push(mm128_t, km, *p, f_min);
         }
     }

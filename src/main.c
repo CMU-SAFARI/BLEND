@@ -81,9 +81,8 @@ static ko_longopt_t long_options[] = {
     { "fixed-bits",     ko_required_argument, 354 },
     { "k-shift",        ko_required_argument, 355 },
     { "neighbors",      ko_required_argument, 356 },
-    { "genome",         ko_required_argument, 357 },
-    { "skewed",         ko_no_argument, 	  358 },
-    { "strobemers",     ko_no_argument, 	  359 },
+    { "skewed",         ko_no_argument, 	  357 },
+    { "strobemers",     ko_no_argument, 	  358 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -140,17 +139,14 @@ int main(int argc, char *argv[])
 	mm_verbose = 3;
 	liftrlimit();
 	mm_realtime0 = realtime();
-	mm_set_opt(0, 0, &ipt, &opt);
+	mm_set_opt(0, &ipt, &opt);
 
     char* presetX = 0;
-    char* presetGen = 0;
     
     // test command line options and apply option -x/preset first
     while((c = ketopt(&o, argc, argv, 1, opt_str, long_options)) >= 0) {
 		if(c == 'x'){
 			presetX = o.arg;
-		}else if (c == 357){
-			presetGen = o.arg;
 		} else if (c == ':') {
     		fprintf(stderr, "[ERROR] missing option argument\n");
 			return 1;
@@ -160,8 +156,8 @@ int main(int argc, char *argv[])
 		}
     }
     
-    if(presetX && mm_set_opt(presetX, presetGen, &ipt, &opt) < 0){
-		fprintf(stderr, "[ERROR] unknown preset '%s or %s'\n", presetX, presetGen);
+    if(presetX && mm_set_opt(presetX, &ipt, &opt) < 0){
+		fprintf(stderr, "[ERROR] unknown preset '%s'\n", presetX);
 		return 1;
     }
     
@@ -255,8 +251,8 @@ int main(int argc, char *argv[])
 		else if (c == 354) ipt.blend_bits = atoi(o.arg); // --blend_bits
 		else if (c == 355) ipt.k_shift = atoi(o.arg); // --k_shift
 		else if (c == 356) ipt.n_neighbors = atoi(o.arg); // --neighbors
-		else if (c == 358) ipt.flag |= B_I_SKEWED; // --skewed
-		else if (c == 359) ipt.flag |= B_I_STROBEMERS; // --strobemers
+		else if (c == 357) ipt.flag |= B_I_SKEWED; // --skewed
+		else if (c == 358) ipt.flag |= B_I_STROBEMERS; // --strobemers
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -391,8 +387,6 @@ int main(int argc, char *argv[])
 //		fprintf(fp_help, "                 - asm5/asm10/asm20 - asm-to-ref mapping, for ~0.1/1/5%% sequence divergence\n");
 //		fprintf(fp_help, "                 - splice/splice:hq - long-read/Pacbio-CCS spliced alignment\n");
 		fprintf(fp_help, "                 - sr - genomic short-read mapping\n");
-		fprintf(fp_help, "    --genome STR preset (always applied before other options) []\n");
-		fprintf(fp_help, "                 - bacteria/eukaryote/human - Type of genome\n");
 //		fprintf(fp_help, "\nSee `man ./blend.1' for detailed description of these and other advanced command-line options.\n");
 		return fp_help == stdout? 0 : 1;
     }

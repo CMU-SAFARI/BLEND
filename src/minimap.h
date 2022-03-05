@@ -204,13 +204,12 @@ extern double mm_realtime0; // wall-clock timer
  * Set default or preset parameters
  *
  * @param presetX    NULL to set all parameters as default; otherwise apply preset to affected parameters
- * @param presetGen  NULL to set all parameters as default; otherwise apply preset to affected parameters
  * @param io         pointer to indexing parameters
  * @param mo         pointer to mapping parameters
  *
  * @return 0 if success; -1 if _present_ unknown
  */
-int mm_set_opt(const char *presetX, const char *presetGen, mm_idxopt_t *io, mm_mapopt_t *mo);
+int mm_set_opt(const char *presetX, mm_idxopt_t *io, mm_mapopt_t *mo);
 int mm_check_opt(const mm_idxopt_t *io, const mm_mapopt_t *mo);
 
 /**

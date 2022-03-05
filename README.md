@@ -84,16 +84,12 @@ The following option (i.e., `fixed-bits`) defines the number of bits that BLEND 
 BLEND also provides preset options. Some of these preset options also depend on the genome type as shown below:
 
 ```bash
--x map-ont (-k15 -w10 --fixed-bits=30 --neighbors=3)
+-x map-ont (-k15 -w5 --fixed-bits=30 --neighbors=3)
 -x ava-ont (-k15 -w20 --fixed-bits=30 --neighbors=3 -e0 -m100 -r2k)
--x map-pb (-Hk15 -w20 --fixed-bits=30 --neighbors=3)
--x ava-pb (-Hk19 -Xw20 --fixed-bits=32 --neighbors=3 -e0 -m100)
--x map-hifi --genome human (-k15 -w500 --fixed-bits=38 --neighbors=100 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1 -s200)
--x map-hifi --genome eukaryote (-k15 -w500 --fixed-bits=30 --neighbors=5 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1 -s200)
--x map-hifi --genome bacteria (-k15 -w500 --fixed-bits=30 --neighbors=3 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1 -s200)
--x ava-hifi --genome human (-k15 -Xw500 --fixed-bits=38 --neighbors=10 -e0 -m100)
--x ava-hifi --genome eukaryote (-k15 -Xw500 --fixed-bits=30 --neighbors=10 -e0 -m100)
--x ava-hifi --genome bacteria (-k15 -Xw500 --fixed-bits=30 --neighbors=5 -e0 -m100)
+-x map-pb (-Hk15 -w5 --fixed-bits=30 --neighbors=3)
+-x ava-pb (-Hk25 -Xw20 --fixed-bits=32 --neighbors=3 -e0 -m100)
+-x map-hifi (--strobemers -k19 -w50 --fixed-bits=38 --neighbors=5 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1 -s200)
+-x ava-hifi (--strobemers -k25 -Xw200 --fixed-bits=50 --neighbors=11 -e0 -m100)
 ```
 
 ## Reproducing the results in the paper

@@ -86,64 +86,50 @@ void mm_mapopt_max_intron_len(mm_mapopt_t *opt, int max_intron_len)
 		opt->max_gap_ref = opt->bw = opt->bw_long = max_intron_len;
 }
 
-int mm_set_opt(const char *presetX, const char *presetGen, mm_idxopt_t *io, mm_mapopt_t *mo)
+int mm_set_opt(const char *presetX, mm_idxopt_t *io, mm_mapopt_t *mo)
 {
 	if (presetX == 0) {
 		mm_idxopt_init(io);
 		mm_mapopt_init(mo);
-	} else if (strcmp(presetX, "map-ont") == 0) {
-		io->flag = 0, io->k = 15; io->w = 10;
+	} else if (strcmp(presetX, "map-ont") == 0) { //BLEND-I faster & more accurate than BLEND-S
+		io->flag = 0, io->k = 15; io->w = 5;
 		io->blend_bits = 30; io->n_neighbors = 3;
-	} else if (strcmp(presetX, "ava-ont") == 0) {
+	} else if (strcmp(presetX, "ava-ont") == 0) { //BLEND-I is more accurate than BLEND-S (BLEND-S faster)
 		io->flag = 0, io->k = 15, io->w = 20;
 		io->blend_bits = 30; io->n_neighbors = 3;
 		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
 		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
 		mo->bw = mo->bw_long = 2000;
 		mo->occ_dist = 0;
-	} else if (strcmp(presetX, "map-pb") == 0) {
-		io->flag |= MM_I_HPC, io->k = 25; io->w = 10;
-		io->blend_bits = 32; io->n_neighbors = 3;
-	} else if (strcmp(presetX, "ava-pb") == 0) {
+	} else if (strcmp(presetX, "map-pb") == 0) { //BLEND-I faster & mora accurate than BLEND-S
+		io->flag |= MM_I_HPC, io->k = 15; io->w = 5;
+		io->blend_bits = 30; io->n_neighbors = 3;
+	} else if (strcmp(presetX, "ava-pb") == 0) { //BLEND-I is more accurate than BLEND-S (BLEND-S faster)
 		io->flag |= MM_I_HPC, io->k = 25; io->w = 20;
 		io->blend_bits = 32; io->n_neighbors = 3;
 		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
 		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
 		mo->bw_long = mo->bw;
 		mo->occ_dist = 0;
-	} else if (strcmp(presetX, "map-hifi") == 0){
-		io->flag = 0, io->k = 15, io->w = 500;
-		if(presetGen && strcmp(presetGen, "human") == 0){
-			io->k = 19;
-			io->blend_bits = 38; io->n_neighbors = 100;
-		}else if(presetGen && strcmp(presetGen, "bacteria") == 0){
-			io->blend_bits = 30; io->n_neighbors = 3;
-		}else{
-			io->blend_bits = 30; io->n_neighbors = 5;
-		}
+	} else if (strcmp(presetX, "map-hifi") == 0){ //BLEND-S is faster than BLEND-I (BLEND-I is probably more accurate)
+		io->flag = B_I_STROBEMERS, io->k = 19, io->w = 50;
+		io->blend_bits = 38; io->n_neighbors = 5;
 
 		mo->max_gap = 10000;
 		mo->a = 1, mo->b = 4, mo->q = 6, mo->q2 = 26, mo->e = 2, mo->e2 = 1;
 		mo->occ_dist = 500;
 		mo->min_mid_occ = 50, mo->max_mid_occ = 500;
 		mo->min_dp_max = 200;
-    } else if (strcmp(presetX, "ava-hifi") == 0){
-		io->flag = 0, io->k = 15; io->w = 500;
-		if(presetGen && strcmp(presetGen, "human") == 0){
-			io->k = 19;
-			io->blend_bits = 38; io->n_neighbors = 10;
-		}else if(presetGen && strcmp(presetGen, "eukaryote") == 0){
-			io->blend_bits = 30; io->n_neighbors = 10;
-		}else{
-			io->blend_bits = 30; io->n_neighbors = 5;
-		}
+    } else if (strcmp(presetX, "ava-hifi") == 0){ //BLEND-S is more accurate and faster than BLEND-I
+		io->flag = B_I_STROBEMERS, io->k = 25; io->w = 200;
+		io->blend_bits = 50; io->n_neighbors = 11;
 
 		mo->flag |= MM_F_ALL_CHAINS | MM_F_NO_DIAG | MM_F_NO_DUAL | MM_F_NO_LJOIN;
 		mo->min_chain_score = 100;
 //		mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
 		mo->bw_long = mo->bw;
 		mo->occ_dist = 0;
-    } else if (strcmp(presetX, "short") == 0 || strcmp(presetX, "sr") == 0) {
+    } else if (strcmp(presetX, "short") == 0 || strcmp(presetX, "sr") == 0) { //BLEND-I can also have n=5 but n=3 faster
 		io->flag = 0, io->k = 21, io->w = 11;
 		io->blend_bits = 32; io->n_neighbors = 3;
 		mo->flag |= MM_F_SR | MM_F_FRAG_MODE | MM_F_NO_PRINT_2ND | MM_F_2_IO_THREADS | MM_F_HEAP_SORT;
