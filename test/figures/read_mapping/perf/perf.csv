@@ -1,22 +1,28 @@
 Data,Tool,CPU Time,Peak Memory (GB)
-Human (HiFi),BLEND,56330.58,13.363148
-Human (HiFi),Minimap2,30789.14,18.914768
-Human (HiFi),Winnowmap,574662.08,33.662796
-Human (HiFi),BLASR,9071427.29,69.857044
+Human (HiFi),BLEND,9540.52,14.945672
+Human (HiFi),Minimap2,38314.88,18.719224
+Human (HiFi),LRA,82961.37,18.838364
+Human (HiFi),Winnowmap,572306.45,33.662796
 Human (HiFi),S-conLSH,1110817.75,87.608440
-D. ananassae (HiFi),BLEND,9444.96,15.329768
-D. ananassae (HiFi),Minimap2,18886.28,20.736996
-D. ananassae (HiFi),Winnowmap,54042.25,18.712200
-D. ananassae (HiFi),BLASR,895061.4,31.634436
-E. coli (HiFi),BLEND,227.19,1.625872
-E. coli (HiFi),Minimap2,249.46,1.404032
-E. coli (HiFi),Winnowmap,617.37,2.226940
-E. coli (HiFi),BLASR,7441.53,1.758512
-E. coli (HiFi),S-conLSH,1906.44,2.009712
+D. ananassae (HiFi),BLEND,7113.51,16.801416
+D. ananassae (HiFi),Minimap2,26235.93,20.789004
+D. ananassae (HiFi),LRA,188827.13,11.134736
+D. ananassae (HiFi),Winnowmap,53638.28,18.712200
+E. coli (HiFi),BLEND,130.62,2.533120
+E. coli (HiFi),Minimap2,173.41,1.385636
+E. coli (HiFi),LRA,227.49,2.220888
+E. coli (HiFi),Winnowmap,607.49,2.226940
+E. coli (HiFi),S-conLSH,1885.93,2.009712
 Yeast (PacBio CLR),BLEND,1722.03,5.003548
 Yeast (PacBio CLR),Minimap2,1579.49,4.862608
+Yeast (PacBio CLR),LRA,30491.41,5.351892
 Yeast (PacBio CLR),Winnowmap,3413.07,20.750036
-Yeast (PacBio CLR),BLASR,30491.41,5.351892
 Yeast (PacBio CLR),S-conLSH,7193.68,5.058412
-Yeast (Illumina),BLEND,479.22,0.751860
-Yeast (Illumina),Minimap2,272.75,0.784764
+Yeast (ONT),BLEND,1153.33,7.169748
+Yeast (ONT),Minimap2,1189.22,5.265364
+Yeast (ONT),LRA,13537.31,5.129968
+Yeast (ONT),Winnowmap,2029.16,11.340288
+Yeast (ONT),S-conLSH,9098.31,5.055524
+Yeast (Illumina),BLEND,344.42,0.824008
+Yeast (Illumina),Minimap2,391.97,0.883320
+

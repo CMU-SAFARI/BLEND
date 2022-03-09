@@ -19,7 +19,7 @@ def main():
     
     for f in args.input:
         sample = f.replace(".csv", "")
-        enums = ['BLEND','Minimap2', 'Winnowmap', 'S-conLSH','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
+        enums = ['BLEND','Minimap2', 'Minimap-eq','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
         with open(f, 'r') as csvfile:
             data = pd.read_csv(csvfile)
             tot_data = len(data.Tool.unique())

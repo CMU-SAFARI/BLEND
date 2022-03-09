@@ -19,7 +19,7 @@ def main():
         enums = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
         with open(f, 'r') as csvfile:
             data = pd.read_csv(csvfile)
-            fig, ax = plt.subplots(2, 1, figsize=(9,5))
+            fig, ax = plt.subplots(2, 1, figsize=(10,5))
             g = []
             g.append(sns.barplot(ax=ax[0], x = "Data", y = "CPU Time", hue = "Tool", data = data, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
             ax[0].grid(linestyle='--', linewidth=0.4)
@@ -53,7 +53,7 @@ def main():
                     else:
                         labels += ' '
             left,right = ax[0].get_ylim()
-            ax[0].set_ylim(left, right+right*80)
+            ax[0].set_ylim(left, right+right*400)
 
             ind = 0
             for c in ax[0].containers:
@@ -91,7 +91,7 @@ def main():
                     else:
                         labels += ' '
             left,right = ax[1].get_ylim()
-            ax[1].set_ylim(left, right+right*9)
+            ax[1].set_ylim(left, right+right*10)
 
             ind = 0
             for c in ax[1].containers:

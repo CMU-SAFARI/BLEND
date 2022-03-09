@@ -19,7 +19,7 @@ def main():
         enums = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
         with open(f, 'r') as csvfile:
             data = pd.read_csv(csvfile)
-            fig, ax = plt.subplots(2, 1, figsize=(10,5))
+            fig, ax = plt.subplots(2, 1, figsize=(11,5))
             g = []
             g.append(sns.barplot(ax=ax[0], x = "Data", y = "CPU Time", hue = "Tool", data = data, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
             ax[0].grid(linestyle='--', linewidth=0.4)
@@ -99,7 +99,7 @@ def main():
                 ind += 1
 
             plt.tight_layout()
-            plt.subplots_adjust(top=0.95, bottom=0.04, left=0.06, right=0.994, hspace=0.05, wspace=0.2)
+            plt.subplots_adjust(top=0.95, bottom=0.04, left=0.05, right=0.994, hspace=0.05, wspace=0.2)
             plt.savefig(f'read_mapping-perf-all_{sample}.pdf')
             plt.show()
 

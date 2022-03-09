@@ -95,7 +95,7 @@ static inline __m256i movemask_inverse(const uint32_t mask) {
 }
 
 static inline void calc_blend_simd(__m256i* blndcnt_lsb, __m256i* blndcnt_msb, __m256i* ma, __m256i* mb, uint64_t val,
-                                   uint64_t mask, int bits) {
+                                   const uint64_t mask, const int bits) {
 
     (*blndcnt_lsb) = _mm256_adds_epi8((*blndcnt_lsb), _mm256_blendv_epi8((*ma), (*mb), movemask_inverse(val&mask)));
     uint64_t blendVal = (uint64_t)_mm256_movemask_epi8((*blndcnt_lsb))&mask;
@@ -106,7 +106,7 @@ static inline void calc_blend_simd(__m256i* blndcnt_lsb, __m256i* blndcnt_msb, _
 }
 
 static inline uint64_t calc_blend_rm_simd(__m256i* blndcnt_lsb, __m256i* blndcnt_msb, __m256i* ma, __m256i* mb,
-                                        uint64_t val, uint64_t remval, uint64_t mask, int bits) {
+                                        uint64_t val, uint64_t remval, const uint64_t mask, const int bits) {
 
     (*blndcnt_lsb) = _mm256_adds_epi8((*blndcnt_lsb), _mm256_blendv_epi8((*ma), (*mb), movemask_inverse(val&mask)));
     uint64_t blendVal = (uint64_t)_mm256_movemask_epi8((*blndcnt_lsb))&mask;
@@ -122,6 +122,24 @@ static inline uint64_t calc_blend_rm_simd(__m256i* blndcnt_lsb, __m256i* blndcnt
     
     return blendVal;
 }
+
+// static inline void calc_blend(mm128_t* addMin, mm128_t* remMin, mm128_t* min, __m256i* blndcnt_lsb, __m256i* blndcnt_msb, __m256i* ma, __m256i* mb, uint64_t val, uint64_t remval, const uint64_t iMask, const uint64_t sMask, const uint64_t blndMask, const int bits){
+
+//     addMin.x = min[j].x;
+//     addMin.y = (min[j].y&iMask)>>1;
+//     tot_span = addMin.y;
+
+//     if(++blendpos == n_neighbors) blendpos = 0;
+//     if(++nm >= n_neighbors){
+//         blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, min[j].x>>14,
+//                                    blndBuf[blendpos].x>>14, blndMask, bits);
+//         tot_span = tot_span - blndBuf[blendpos].y + blndBuf[blendpos].x&sMask;
+//         info.x = blendVal << 14 | tot_span;
+//         info.y = min[j].y;
+//         kv_push(mm128_t, km, *p, info);
+//     }else //only addition of min[j]
+//         calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, min[j].x>>14, blndMask, bits);
+// }
 
 /**
  * Find symmetric (w,k)-minimizers on a DNA sequence and BLEND it with its (n_neighbors-1) preceding neighbor k-mers
@@ -155,16 +173,17 @@ void mm_sketch_blend(void *km,
     
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56)); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
     
-    int blndK = (blend_bits>0)?blend_bits:2*k;
-    uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, kmer[2] = {0,0}, hkmer = 0, sMask = (1ULL<<14)-1;
+    const int blndK = (blend_bits>0)?blend_bits:2*k;
+    const uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1;
+    uint64_t kmer[2] = {0,0}, hkmer[2] = {0,0};
     int i, j, l, buf_pos, min_pos, kmer_span = 0, tot_span;
     mm128_t buf[w];
     mm128_t min = { UINT64_MAX, UINT64_MAX };
     tiny_queue_t tq;
     
     //BLEND Variables
-    uint64_t blendVal = 0;
-    mm128_t blndBuf[n_neighbors];
+    uint64_t blendVal = 0, r_blendVal = 0;
+    b176_t blndBuf[n_neighbors];
     int f_blendpos = 0;
     
     //SIMD-related variables
@@ -172,9 +191,12 @@ void mm_sketch_blend(void *km,
     __m256i mb = _mm256_set1_epi8(-1);
     __m256i blndcnt_lsb = _mm256_set1_epi8(0);
     __m256i blndcnt_msb = _mm256_set1_epi8(0);
+    __m256i r_blndcnt_lsb = _mm256_set1_epi8(0);
+    __m256i r_blndcnt_msb = _mm256_set1_epi8(0);
+
     
     memset(buf, 0xff, w*16);
-    memset(blndBuf, 0, n_neighbors*16); //176/8
+    memset(blndBuf, 0, n_neighbors*22); //176/8
     memset(&tq, 0, sizeof(tiny_queue_t));
     kv_resize(mm128_t, km, *p, p->n + len/w);
 
@@ -198,32 +220,44 @@ void mm_sketch_blend(void *km,
             
             kmer[0] = ((kmer[0] << 2 | c) & mask); // forward k-mer
             kmer[1] = ((kmer[1] >> 2) | (3ULL^c) << shift1); //reverse k-mer k-mer
-            if (kmer[0] == kmer[1]) continue; // skip "symmetric k-mers" as we don't know it strand
-            z = kmer[0] < kmer[1]? 0 : 1; // strand
 
             ++l;
             if (l >= k && kmer_span < 256){
                 
                 //@IMPORTANT compute hash values in SIMD as well?
-                hkmer = hash64(kmer[z], blndMask);
-                blndBuf[f_blendpos].x = hkmer << 14 | kmer_span;
-                blndBuf[f_blendpos].y = i;
+                hkmer[0] = hash64(kmer[0], blndMask);
+                hkmer[1] = hash64(kmer[1], blndMask);
+                blndBuf[f_blendpos].x = hkmer[0];
+                blndBuf[f_blendpos].y = hkmer[1];
+                blndBuf[f_blendpos].k = kmer_span;
+                blndBuf[f_blendpos].i = i;
 
                 if(++f_blendpos == n_neighbors) f_blendpos = 0;
 
                 if(l >= n_neighbors+k-1){
 
-                    blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer, 
-                                                  blndBuf[f_blendpos].x>>14, mask32, blndK);
+                    blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], 
+                                                  blndBuf[f_blendpos].x, mask32, blndK);
+                    r_blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1],
+                                                    blndBuf[f_blendpos].y, mask32, blndK);
+
+                    if(blendVal == r_blendVal) continue; // skip "symmetric blends" as we don't know its strand
 
                     //@IMPORTANT: here we use tot_span but we could use only kmer_span too
                     //it would be more precise but would lead to large gaps between seeds.
-                    tot_span = i - (uint32_t)blndBuf[f_blendpos].y + (uint32_t)blndBuf[f_blendpos].x&sMask;
+                    tot_span = i - blndBuf[f_blendpos].i + (uint32_t)blndBuf[f_blendpos].k;
                     
-                    info.x = blendVal << 14 | tot_span;
-                    info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
-                }else
-                    calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer, mask32, blndK);
+                    if(blendVal < r_blendVal){
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 0;
+                    }else{
+                        info.x = r_blendVal << 14 | tot_span;
+                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 1;
+                    }
+                }else{
+                    calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], mask32, blndK);
+                    calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1], mask32, blndK);
+                }
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0;
         buf[buf_pos] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
@@ -289,39 +323,42 @@ void mm_sketch_sb_blend(void *km,
     
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56)); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
     
-    int blndK = (blend_bits>0)?blend_bits:2*k;
-    uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1, iMask = (1ULL<<31)-1, blndMask = (1ULL<<blndK)-1, kmer[2] = {0,0}, hkmer = 0; //for iMask, the actual value should be shifted right first
-    int i, j, l, buf_pos, f_min_pos, kmer_span = 0;
+    const int blndK = (blend_bits>0)?blend_bits:2*k;
+    const uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1, blndMask = (1ULL<<blndK)-1, iMask = (1ULL<<31)-1; //for iMask, the actual value should be shifted right first
+    uint64_t kmer[2] = {0,0}, hkmer = 0;
+    int i, j, l, buf_pos, min_pos, kmer_span = 0;
 
     uint32_t tot_span;
     tiny_queue_t tq;
 
-    mm128_t f_buf[w];
-    mm128_t f_min = { UINT64_MAX, UINT64_MAX };
-    mm128_t f_rem;
+    mm128_t buf[w];
+    mm128_t min = { UINT64_MAX, UINT64_MAX };
     
     //BLEND Variables
     uint64_t blendVal = 0;
     mm128_t f_blndBuf[n_neighbors];
-    int f_blendpos = 0;
-    uint64_t f_nm = 0; //number of minimizers processed
+    mm128_t r_blndBuf[n_neighbors];
+    int f_blendpos = 0, r_blendpos = 0;
+    uint64_t f_nm = 0, r_nm = 0; //number of minimizers processed
     
     //SSE4-related variables
     __m256i ma = _mm256_set1_epi8(1);
     __m256i mb = _mm256_set1_epi8(-1);
     __m256i f_blndcnt_lsb = _mm256_set1_epi8(0);
     __m256i f_blndcnt_msb = _mm256_set1_epi8(0);
+    __m256i r_blndcnt_lsb = _mm256_set1_epi8(0);
+    __m256i r_blndcnt_msb = _mm256_set1_epi8(0);
     
-    memset(f_buf, 0xff, w*16);
+    memset(buf, 0xff, w*16);
     memset(f_blndBuf, 0, n_neighbors*16);
+    memset(r_blndBuf, 0, n_neighbors*16);
     memset(&tq, 0, sizeof(tiny_queue_t));
     kv_resize(mm128_t, km, *p, p->n + len/w);
 
-    for (i = l = f_blendpos = buf_pos = f_min_pos = 0; i < len; ++i) {
+    for (i = l = f_blendpos = r_blendpos = buf_pos = min_pos = 0; i < len; ++i) {
         int c = seq_nt4_table[(uint8_t)str[i]];
         mm128_t info = { UINT64_MAX, UINT64_MAX };
         mm128_t f_info = { UINT64_MAX, UINT64_MAX };
-        mm128_t r_info = { UINT64_MAX, UINT64_MAX };
         if (c < 4) { // not an ambiguous base
             int z;
             if (is_hpc) {
@@ -349,138 +386,257 @@ void mm_sketch_sb_blend(void *km,
                 f_info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0;
-        f_buf[buf_pos] = f_info; // need to do this here as appropriate f_buf[buf_pos] are needed below
+        buf[buf_pos] = f_info; // need to do this here as appropriate buf[buf_pos] are needed below
         
         // special case for the first window - because identical k-mers are not stored yet
-        if (l == w + k - 1 && f_min.x != UINT64_MAX) {
+        if (l == w + k - 1 && min.x != UINT64_MAX) {
             for (j = buf_pos + 1; j < w; ++j){
-                if (f_min.x == f_buf[j].x && f_buf[j].y != f_min.y) {                   
-                    f_blndBuf[f_blendpos].x = f_buf[j].x;
-                    f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
-                    tot_span = f_blndBuf[f_blendpos].y;
+                if (min.x == buf[j].x && buf[j].y != min.y) {
+                    if(buf[j].y&1 == 1){ //reverse strand
+                        r_blndBuf[r_blendpos].x = buf[j].x;
+                        r_blndBuf[r_blendpos].y = (buf[j].y&iMask)>>1;
+                        tot_span = r_blndBuf[r_blendpos].y;
 
-                    if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                    if(++f_nm >= n_neighbors){
-                        blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
-                                                   f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                        tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-                        info.x = blendVal << 14 | tot_span;
-                        info.y = f_buf[j].y;
-                        kv_push(mm128_t, km, *p, info);
-                    }else //only addition of f_buf[j]
-                        calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32, blndK);
+                        if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                        if(++r_nm >= n_neighbors){
+                            blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                          r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                            tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = buf[j].y;
+                            kv_push(mm128_t, km, *p, info);
+                        }else //only addition of buf[j]
+                            calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                    }else{
+                        f_blndBuf[f_blendpos].x = buf[j].x;
+                        f_blndBuf[f_blendpos].y = (buf[j].y&iMask)>>1;
+                        tot_span = f_blndBuf[f_blendpos].y;
+
+                        if(++f_blendpos == n_neighbors) f_blendpos = 0;
+                        if(++f_nm >= n_neighbors){
+                            blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                          f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = buf[j].y;
+                            kv_push(mm128_t, km, *p, info);
+                        }else //only addition of buf[j]
+                            calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                    }
                 }
             }
             for (j = 0; j < buf_pos; ++j)
-                if (f_min.x == f_buf[j].x && f_buf[j].y != f_min.y) {
-                    f_blndBuf[f_blendpos].x = f_buf[j].x;
-                    f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
+                if (min.x == buf[j].x && buf[j].y != min.y) {
+                    if(buf[j].y&1 == 1){ //reverse strand
+                        r_blndBuf[r_blendpos].x = buf[j].x;
+                        r_blndBuf[r_blendpos].y = (buf[j].y&iMask)>>1;
+                        tot_span = r_blndBuf[r_blendpos].y;
+
+                        if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                        if(++r_nm >= n_neighbors){
+                            blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                          r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                            tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = buf[j].y;
+                            kv_push(mm128_t, km, *p, info);
+                        }else //only addition of buf[j]
+                            calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                    }else{
+                        f_blndBuf[f_blendpos].x = buf[j].x;
+                        f_blndBuf[f_blendpos].y = (buf[j].y&iMask)>>1;
+                        tot_span = f_blndBuf[f_blendpos].y;
+
+                        if(++f_blendpos == n_neighbors) f_blendpos = 0;
+                        if(++f_nm >= n_neighbors){
+                            blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                          f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                            info.x = blendVal << 14 | tot_span;
+                            info.y = buf[j].y;
+                            kv_push(mm128_t, km, *p, info);
+                        }else //only addition of buf[j]
+                            calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                    }
+                }
+        }
+
+        if (f_info.x <= min.x) { // a new minimum; then write the old min
+            if (l >= w + k && min.x != UINT64_MAX) {
+                if(min.y&1 == 1){ //reverse strand
+                    r_blndBuf[r_blendpos].x = min.x;
+                    r_blndBuf[r_blendpos].y = (min.y&iMask)>>1;
+                    tot_span = r_blndBuf[r_blendpos].y;
+
+                    if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                    if(++r_nm >= n_neighbors){
+                        blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                                      r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                        tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = min.y;
+                        kv_push(mm128_t, km, *p, info);
+                    }else //only addition of min
+                        calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
+                }else{
+                    f_blndBuf[f_blendpos].x = min.x;
+                    f_blndBuf[f_blendpos].y = (min.y&iMask)>>1;
                     tot_span = f_blndBuf[f_blendpos].y;
 
                     if(++f_blendpos == n_neighbors) f_blendpos = 0;
                     if(++f_nm >= n_neighbors){
-                        blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
-                                                   f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                        blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                                      f_blndBuf[f_blendpos].x>>14, mask32, blndK);
                         tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
                         info.x = blendVal << 14 | tot_span;
-                        info.y = f_buf[j].y;
+                        info.y = min.y;
                         kv_push(mm128_t, km, *p, info);
-                    }else
-                        calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32, blndK);
+                    }else //only addition of min
+                        calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
                 }
-        }
-
-        if (f_info.x <= f_min.x) { // a new minimum; then write the old f_min
-            if (l >= w + k && f_min.x != UINT64_MAX) {
-                f_blndBuf[f_blendpos].x = f_min.x;
-                f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
-                tot_span = f_blndBuf[f_blendpos].y;
-
-                if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                if(++f_nm >= n_neighbors){
-                    blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
-                                               f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                    tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-                    info.x = blendVal << 14 | tot_span;
-                    info.y = f_min.y;
-                    kv_push(mm128_t, km, *p, info);
-                }else 
-                    calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14, mask32, blndK);
             }
-            f_min = f_info, f_min_pos = buf_pos;
-        } else if (buf_pos == f_min_pos) { // old f_min has moved outside the window
-            if (l >= w + k - 1 && f_min.x != UINT64_MAX) {
-                f_blndBuf[f_blendpos].x = f_min.x;
-                f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
-                tot_span = f_blndBuf[f_blendpos].y;
+            min = f_info, min_pos = buf_pos;
+        } else if (buf_pos == min_pos) { // old min has moved outside the window
+            if (l >= w + k - 1 && min.x != UINT64_MAX) {
+                if(min.y&1 == 1){ //reverse strand
+                    r_blndBuf[r_blendpos].x = min.x;
+                    r_blndBuf[r_blendpos].y = (min.y&iMask)>>1;
+                    tot_span = r_blndBuf[r_blendpos].y;
 
-                if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                if(++f_nm >= n_neighbors){
-                    blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
-                                               f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                    tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-                    info.x = blendVal << 14 | tot_span;
-                    info.y = f_min.y;
-                    kv_push(mm128_t, km, *p, info);
-                }else 
-                    calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14, mask32, blndK);
+                    if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                    if(++r_nm >= n_neighbors){
+                        blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                                      r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                        tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = min.y;
+                        kv_push(mm128_t, km, *p, info);
+                    }else //only addition of min
+                        calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
+                }else{
+                    f_blndBuf[f_blendpos].x = min.x;
+                    f_blndBuf[f_blendpos].y = (min.y&iMask)>>1;
+                    tot_span = f_blndBuf[f_blendpos].y;
+
+                    if(++f_blendpos == n_neighbors) f_blendpos = 0;
+                    if(++f_nm >= n_neighbors){
+                        blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                                      f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                        tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                        info.x = blendVal << 14 | tot_span;
+                        info.y = min.y;
+                        kv_push(mm128_t, km, *p, info);
+                    }else //only addition of min
+                        calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
+                }
             }
-            for (j = buf_pos + 1, f_min.x = UINT64_MAX; j < w; ++j) // the two loops are necessary when there are identical k-mers. This one starts from the oldest (first in: buf_pos + 1) 
-                if (f_min.x >= f_buf[j].x) f_min = f_buf[j], f_min_pos = j; // >= is important s.t. f_min is always the closest k-mer... chosing the last one because we will store *all* identical minimizers and continue with the last one once all identical ones are stored. @IMPORTANT: should we really store all identical k-mers? it is true that they are the minimizers for their own window but not sure how effective it is
+            for (j = buf_pos + 1, min.x = UINT64_MAX; j < w; ++j) // the two loops are necessary when there are identical k-mers. This one starts from the oldest (first in: buf_pos + 1) 
+                if (min.x >= buf[j].x) min = buf[j], min_pos = j; // >= is important s.t. min is always the closest k-mer... chosing the last one because we will store *all* identical minimizers and continue with the last one once all identical ones are stored. @IMPORTANT: should we really store all identical k-mers? it is true that they are the minimizers for their own window but not sure how effective it is
             for (j = 0; j <= buf_pos; ++j)
-                if (f_min.x >= f_buf[j].x) f_min = f_buf[j], f_min_pos = j;
-            if (l >= w + k - 1 && f_min.x != UINT64_MAX) { // write identical k-mers
+                if (min.x >= buf[j].x) min = buf[j], min_pos = j;
+            if (l >= w + k - 1 && min.x != UINT64_MAX) { // write identical k-mers
                 for (j = buf_pos + 1; j < w; ++j) // these two loops make sure the output is sorted
-                    if (f_min.x == f_buf[j].x && f_min.y != f_buf[j].y) {
-                        f_blndBuf[f_blendpos].x = f_buf[j].x;
-                        f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
-                        tot_span = f_blndBuf[f_blendpos].y;
+                    if (min.x == buf[j].x && min.y != buf[j].y) {
+                        if(buf[j].y&1 == 1){ //reverse strand
+                            r_blndBuf[r_blendpos].x = buf[j].x;
+                            r_blndBuf[r_blendpos].y = (buf[j].y&iMask)>>1;
+                            tot_span = r_blndBuf[r_blendpos].y;
 
-                        if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                        if(++f_nm >= n_neighbors){
-                            blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
-                                                       f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-                            info.x = blendVal << 14 | tot_span;
-                            info.y = f_buf[j].y;
-                            kv_push(mm128_t, km, *p, info);
-                        }else 
-                            calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32,blndK);
+                            if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                            if(++r_nm >= n_neighbors){
+                                blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                              r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                                tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                                info.x = blendVal << 14 | tot_span;
+                                info.y = buf[j].y;
+                                kv_push(mm128_t, km, *p, info);
+                            }else //only addition of buf[j]
+                                calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                        }else{
+                            f_blndBuf[f_blendpos].x = buf[j].x;
+                            f_blndBuf[f_blendpos].y = (buf[j].y&iMask)>>1;
+                            tot_span = f_blndBuf[f_blendpos].y;
+
+                            if(++f_blendpos == n_neighbors) f_blendpos = 0;
+                            if(++f_nm >= n_neighbors){
+                                blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                              f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                                tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                                info.x = blendVal << 14 | tot_span;
+                                info.y = buf[j].y;
+                                kv_push(mm128_t, km, *p, info);
+                            }else //only addition of buf[j]
+                                calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                        }
                     }
                 for (j = 0; j <= buf_pos; ++j)
-                    if (f_min.x == f_buf[j].x && f_min.y != f_buf[j].y) {
-                        f_blndBuf[f_blendpos].x = f_buf[j].x;
-                        f_blndBuf[f_blendpos].y = (f_buf[j].y&iMask)>>1;
-                        tot_span = f_blndBuf[f_blendpos].y;
+                    if (min.x == buf[j].x && min.y != buf[j].y) {
+                        if(buf[j].y&1 == 1){ //reverse strand
+                            r_blndBuf[r_blendpos].x = buf[j].x;
+                            r_blndBuf[r_blendpos].y = (buf[j].y&iMask)>>1;
+                            tot_span = r_blndBuf[r_blendpos].y;
 
-                        if(++f_blendpos == n_neighbors) f_blendpos = 0;
-                        if(++f_nm >= n_neighbors){
-                            blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14,
-                                                       f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-                            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-                            info.x = blendVal << 14 | tot_span;
-                            info.y = f_buf[j].y;
-                            kv_push(mm128_t, km, *p, info);
-                        }else 
-                            calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_buf[j].x>>14, mask32,blndK);
+                            if(++r_blendpos == n_neighbors) r_blendpos = 0;
+                            if(++r_nm >= n_neighbors){
+                                blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                              r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                                tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                                info.x = blendVal << 14 | tot_span;
+                                info.y = buf[j].y;
+                                kv_push(mm128_t, km, *p, info);
+                            }else //only addition of buf[j]
+                                calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                        }else{
+                            f_blndBuf[f_blendpos].x = buf[j].x;
+                            f_blndBuf[f_blendpos].y = (buf[j].y&iMask)>>1;
+                            tot_span = f_blndBuf[f_blendpos].y;
+
+                            if(++f_blendpos == n_neighbors) f_blendpos = 0;
+                            if(++f_nm >= n_neighbors){
+                                blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, 
+                                                              f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                                tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                                info.x = blendVal << 14 | tot_span;
+                                info.y = buf[j].y;
+                                kv_push(mm128_t, km, *p, info);
+                            }else //only addition of buf[j]
+                                calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, buf[j].x>>14, mask32, blndK);
+                        }
                     }
             }
         }
         if(++buf_pos == w) buf_pos = 0;
     }
 
-    if (f_min.x != UINT64_MAX){
-        f_blndBuf[f_blendpos].x = f_min.x;
-        f_blndBuf[f_blendpos].y = (f_min.y&iMask)>>1;
-        tot_span = f_blndBuf[f_blendpos].y;
+    if (min.x != UINT64_MAX){
+        if(min.y&1 == 1){ //reverse strand
+            r_blndBuf[r_blendpos].x = min.x;
+            r_blndBuf[r_blendpos].y = (min.y&iMask)>>1;
+            tot_span = r_blndBuf[r_blendpos].y;
 
-        if(++f_blendpos == n_neighbors) f_blendpos = 0;
-        if(++f_nm >= n_neighbors){
-            blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, f_min.x>>14,
-                                       f_blndBuf[f_blendpos].x>>14, mask32, blndK);
-            tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
-            f_min.x = blendVal << 14 | tot_span;
-            kv_push(mm128_t, km, *p, f_min);
+            if(++r_blendpos == n_neighbors) r_blendpos = 0;
+            if(++r_nm >= n_neighbors){
+                blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                              r_blndBuf[r_blendpos].x>>14, mask32, blndK);
+                tot_span = tot_span - r_blndBuf[r_blendpos].y + r_blndBuf[r_blendpos].x&sMask;
+                min.x = blendVal << 14 | tot_span;
+                kv_push(mm128_t, km, *p, min);
+            }else //only addition of min
+                calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
+        }else{
+            f_blndBuf[f_blendpos].x = min.x;
+            f_blndBuf[f_blendpos].y = (min.y&iMask)>>1;
+            tot_span = f_blndBuf[f_blendpos].y;
+
+            if(++f_blendpos == n_neighbors) f_blendpos = 0;
+            if(++f_nm >= n_neighbors){
+                blendVal = calc_blend_rm_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, 
+                                              f_blndBuf[f_blendpos].x>>14, mask32, blndK);
+                tot_span = tot_span - f_blndBuf[f_blendpos].y + f_blndBuf[f_blendpos].x&sMask;
+                min.x = blendVal << 14 | tot_span;
+                kv_push(mm128_t, km, *p, min);
+            }else //only addition of min
+                calc_blend_simd(&f_blndcnt_lsb, &f_blndcnt_msb, &ma, &mb, min.x>>14, mask32, blndK);
         }
     }
 }
@@ -519,8 +675,9 @@ void mm_sketch_sk_blend(void *km,
 
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56));
 
-    int blndK = (blend_bits>0)?blend_bits:2*k;
-    uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, kmer[2] = {0,0}, hkmer[4] = {0,0,0,0};
+    const int blndK = (blend_bits>0)?blend_bits:2*k;
+    const uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1;
+    uint64_t kmer[2] = {0,0}, hkmer[4] = {0,0,0,0};
     int i, j, l, buf_pos, min_pos, kmer_span = 0, tot_span;
     mm128_t buf[w];
     mm128_t min = { UINT64_MAX, UINT64_MAX };

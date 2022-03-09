@@ -4,7 +4,7 @@ bash convert_bam_to_bed-onlycorrect.sh
 bash convert_sam_to_bed-onlycorrect.sh
 bash merge_beds.sh
 
-echo "Precision (BLEND)"
+echo "Precision (BLEND-I)"
 echo "chrI:"
 blend_chrI=$(cat blend.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrI") print $1}' | sort | uniq | awk 'END {x = NR/5139; printf "%.4f\n", x}')
 echo $blend_chrI;
@@ -19,6 +19,23 @@ blend_chrIV=$(cat blend.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrIV") print
 echo $blend_chrIV;
 echo "chrV:"
 blend_chrV=$(cat blend.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrV") print $1}' | sort | uniq | awk 'END {x = NR/12936; printf "%.4f\n", x}')
+echo $blend_chrV;
+
+echo "Precision (BLEND-S)"
+echo "chrI:"
+blend_strobemers_chrI=$(cat blend_strobemers.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrI") print $1}' | sort | uniq | awk 'END {x = NR/5139; printf "%.4f\n", x}')
+echo $blend_strobemers_chrI;
+echo "chrII:"
+blend_strobemers_chrII=$(cat blend_strobemers.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrII") print $1}' | sort | uniq | awk 'END {x = NR/18074; printf "%.4f\n", x}')
+echo $blend_strobemers_chrII;
+echo "chrIII:"
+blend_strobemers_chrIII=$(cat blend_strobemers.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrIII") print $1}' | sort | uniq | awk 'END {x = NR/6997; printf "%.4f\n", x}')
+echo $blend_strobemers_chrIII;
+echo "chrIV:"
+blend_strobemers_chrIV=$(cat blend_strobemers.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrIV") print $1}' | sort | uniq | awk 'END {x = NR/34163; printf "%.4f\n", x}')
+echo $blend_strobemers_chrIV;
+echo "chrV:"
+blend_strobemers_chrV=$(cat blend_strobemers.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrV") print $1}' | sort | uniq | awk 'END {x = NR/12936; printf "%.4f\n", x}')
 echo $blend_chrV;
 
 echo "Precision (Minimap2)"
@@ -37,6 +54,23 @@ echo $minimap2_chrIV;
 echo "chrV:"
 minimap2_chrV=$(cat minimap2.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrV") print $1}' | sort | uniq | awk 'END {x = NR/12936; printf "%.4f\n", x}')
 echo $minimap2_chrV;
+
+echo "Precision (Minimap2-eq)"
+echo "chrI:"
+minimap2_eq_chrI=$(cat minimap2_eq.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrI") print $1}' | sort | uniq | awk 'END {x = NR/5139; printf "%.4f\n", x}')
+echo $minimap2_eq_chrI;
+echo "chrII:"
+minimap2_eq_chrII=$(cat minimap2_eq.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrII") print $1}' | sort | uniq | awk 'END {x = NR/18074; printf "%.4f\n", x}')
+echo $minimap2_eq_chrII;
+echo "chrIII:"
+minimap2_eq_chrIII=$(cat minimap2_eq.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrIII") print $1}' | sort | uniq | awk 'END {x = NR/6997; printf "%.4f\n", x}')
+echo $minimap2_eq_chrIII;
+echo "chrIV:"
+minimap2_eq_chrIV=$(cat minimap2_eq.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrIV") print $1}' | sort | uniq | awk 'END {x = NR/34163; printf "%.4f\n", x}')
+echo $minimap2_eq_chrIV;
+echo "chrV:"
+minimap2_eq_chrV=$(cat minimap2_eq.bam.joined.bed | awk -v FS=' ' '{if($2 == "chrV") print $1}' | sort | uniq | awk 'END {x = NR/12936; printf "%.4f\n", x}')
+echo $minimap2_eq_chrV;
 
 echo "Precision (LRA)"
 echo "chrI:"
@@ -94,11 +128,24 @@ awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",BLEND"}' 
 
 awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",Minimap2"}' minimap2.bam.joined.bed | awk -v var1="$minimap2_chrI" -v var2="$minimap2_chrII" -v var3="$minimap2_chrIII" -v var4="$minimap2_chrIV" -v var5="$minimap2_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V.filtered.csv
 
-awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",LRA"}' lra.bam.joined.bed | awk -v var1="$lra_chrI" -v var2="$lra_chrII" -v var3="$lra_chrIII" -v var4="$lra_chrIV" -v var5="$lra_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V.fixltered.csv
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",LRA"}' lra.bam.joined.bed | awk -v var1="$lra_chrI" -v var2="$lra_chrII" -v var3="$lra_chrIII" -v var4="$lra_chrIV" -v var5="$lra_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V.filtered.csv
 
 awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",Winnowmap"}' winnowmap.bam.joined.bed | awk -v var1="$winnowmap_chrI" -v var2="$winnowmap_chrII" -v var3="$winnowmap_chrIII" -v var4="$winnowmap_chrIV" -v var5="$winnowmap_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V.filtered.csv
 
 awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",S-conLSH"}' conlsh.bam.joined.bed | awk -v var1="$conlsh_chrI" -v var2="$conlsh_chrII" -v var3="$conlsh_chrIII" -v var4="$conlsh_chrIV" -v var5="$conlsh_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V.filtered.csv
+
+
+echo 'Read,Chromosome,Alignment,True Location,Distance,Tool' > combined_alignment_chrI-V-eq.filtered.csv
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",BLEND"}' blend.bam.joined.bed | awk -v var1="$blend_chrI" -v var2="$blend_chrII" -v var3="$blend_chrIII" -v var4="$blend_chrIV" -v var5="$blend_chrV"  -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V-eq.filtered.csv
+
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",Minimap2"}' minimap2.bam.joined.bed | awk -v var1="$minimap2_chrI" -v var2="$minimap2_chrII" -v var3="$minimap2_chrIII" -v var4="$minimap2_chrIV" -v var5="$minimap2_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V-eq.filtered.csv
+
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",Minimap2-eq"}' minimap2_eq.bam.joined.bed | awk -v var1="$minimap2_eq_chrI" -v var2="$minimap2_eq_chrII" -v var3="$minimap2_eq_chrIII" -v var4="$minimap2_eq_chrIV" -v var5="$minimap2_eq_chrV" -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V-eq.filtered.csv
+
+
+echo 'Read,Chromosome,Alignment,True Location,Distance,Tool' > combined_alignment_chrI-V-blend.filtered.csv
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",BLEND-I"}' blend.bam.joined.bed | awk -v var1="$blend_chrI" -v var2="$blend_chrII" -v var3="$blend_chrIII" -v var4="$blend_chrIV" -v var5="$blend_chrV"  -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V-blend.filtered.csv
+awk -v FS=' ' '{if($5 <= 50 && $5 >= -50)print $1","$2","$3","$4","$5",BLEND-S"}' blend_strobemers.bam.joined.bed | awk -v var1="$blend_strobemers_chrI" -v var2="$blend_strobemers_chrII" -v var3="$blend_strobemers_chrIII" -v var4="$blend_strobemers_chrIV" -v var5="$blend_strobemers_chrV"  -v FS=',' '{if($2 == "chrI"){print $1","$2" (Precision: "var1"),"$3","$4","$5","$6}else if($2 == "chrII"){print $1","$2" (Precision: "var2"),"$3","$4","$5","$6}else if($2 == "chrIII"){print $1","$2" (Precision: "var3"),"$3","$4","$5","$6}else if($2 == "chrIV"){print $1","$2" (Precision: "var4"),"$3","$4","$5","$6}else if($2 == "chrV"){print $1","$2" (Precision: "var5"),"$3","$4","$5","$6}}' >> combined_alignment_chrI-V-blend.filtered.csv
 
 bash evaluate-read_mapping.sh
 bash mapeval.sh

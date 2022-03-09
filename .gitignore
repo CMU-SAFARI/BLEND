@@ -57,10 +57,11 @@ test/comparisons/*/read_mapping/*.mapeval
 test/comparisons/*/read_mapping/*.csv
 test/comparisons/*/read_mapping/figures/
 
-test/comparisons/*/overlap/dnadiff/
 test/comparisons/*/overlap/quast/
-test/comparisons/*/overlap/*.stats
+test/comparisons/*/overlap/dnadiff/
 test/comparisons/*/overlap/*evaluate.*
+test/comparisons/*/overlap/*.stats
+test/comparisons/*/overlap/*.ov-eval
 test/comparisons/*/overlap/figures/
 
 test/figures/*/*/*.pdf

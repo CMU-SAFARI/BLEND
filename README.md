@@ -81,15 +81,15 @@ The following option (i.e., `fixed-bits`) defines the number of bits that BLEND 
 --fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [0].
 ```
 
-BLEND also provides preset options. Some of these preset options also depend on the genome type as shown below:
+BLEND provides the following preset options:
 
 ```bash
--x map-ont (-k15 -w5 --fixed-bits=30 --neighbors=3)
--x ava-ont (-k15 -w20 --fixed-bits=30 --neighbors=3 -e0 -m100 -r2k)
--x map-pb (-Hk15 -w5 --fixed-bits=30 --neighbors=3)
--x ava-pb (-Hk25 -Xw20 --fixed-bits=32 --neighbors=3 -e0 -m100)
+-x map-ont (-k7 -w10 --fixed-bits=32 --neighbors=11)
+-x ava-ont (-k15 -w10 --fixed-bits=30 --neighbors=5 -e0 -m100 -r2k)
+-x map-pb (-Hk7 -w10 --fixed-bits=32 --neighbors=15)
+-x ava-pb (-Hk19 -Xw10 --fixed-bits=38 --neighbors=5 -e0 -m100)
 -x map-hifi (--strobemers -k19 -w50 --fixed-bits=38 --neighbors=5 -U50,500 -g10k -A1 -B4 -O6,26 -E2,1 -s200)
--x ava-hifi (--strobemers -k25 -Xw200 --fixed-bits=50 --neighbors=11 -e0 -m100)
+-x ava-hifi (--strobemers -k25 -Xw200 --fixed-bits=50 --neighbors=7 -e0 -m100)
 ```
 
 ## Reproducing the results in the paper

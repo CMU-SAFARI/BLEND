@@ -1,0 +1,19 @@
+Data,Tool,CPU Time,Peak Memory (GB)
+Human (HiFi),BLEND,9540.52,14.945672
+Human (HiFi),Minimap2,38314.88,18.719224
+Human (HiFi),Minimap2-eq,30471.38,10.765520
+D. ananassae (HiFi),BLEND,7113.51,16.801416
+D. ananassae (HiFi),Minimap2,26235.93,20.789004
+D. ananassae (HiFi),Minimap2-eq,14061.55,17.634732
+E. coli (HiFi),BLEND,130.62,2.533120
+E. coli (HiFi),Minimap2,173.41,1.385636
+E. coli (HiFi),Minimap2-eq,144.94,1.410636
+Yeast (PacBio CLR),BLEND,1722.03,5.003548
+Yeast (PacBio CLR),Minimap2,1579.49,4.862608
+Yeast (PacBio CLR),Minimap2-eq,1579.49,4.862608
+Yeast (ONT),BLEND,1153.33,7.169748
+Yeast (ONT),Minimap2,1189.22,5.265364
+Yeast (ONT),Minimap2-eq,1271.29,7.050948
+Yeast (Illumina),BLEND,344.42,0.824008
+Yeast (Illumina),Minimap2,391.97,0.883320
+Yeast (Illumina),Minimap2-eq,279.77,0.745892
