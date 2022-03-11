@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
 		fprintf(fp_help, "    --fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [%d]\n", ipt.blend_bits);
 		// fprintf(fp_help, "    --skewed     use skewed addressing for masking low-confident bits)\n");
 		fprintf(fp_help, "    --strobemers link minimizers rather than the preceding k-mers of a single minimizer. (Number of minimizers to link is defined by --neighbors.)\n");
-		fprintf(fp_help, "    --immediate use the hash values of consecutive k-mers to generate the hash values of seeds (defualt behavior).)\n");
+		fprintf(fp_help, "    --immediate use the hash values of consecutive k-mers to generate the hash values of seeds (defualt behavior).\n");
 		fprintf(fp_help, "    -I NUM       split index for every ~NUM input bases [4G]\n");
 		fprintf(fp_help, "    -d FILE      dump index to FILE []\n");
 		fprintf(fp_help, "  Mapping:\n");

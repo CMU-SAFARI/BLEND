@@ -2,13 +2,13 @@
 
 THREAD=32
 
-# #e.coli-pb-sequelii
-# OUTDIR="./e.coli-pb-sequelii/overlap/"
-# PREFIX="Ecoli.PB.HiFi.100X"
-# READS="../data/e.coli-pb-sequelii/Ecoli.PB.HiFi.100X.fasta"
+#e.coli-pb-sequelii
+OUTDIR="./e.coli-pb-sequelii/overlap/"
+PREFIX="Ecoli.PB.HiFi.100X"
+READS="../data/e.coli-pb-sequelii/Ecoli.PB.HiFi.100X.fasta"
 
-# mkdir -p ${OUTDIR}
-# bash ../scripts/mhap-overlap-hifi.sh ${OUTDIR} ${PREFIX} ${READS} ${THREAD} ../scripts/ > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+mkdir -p ${OUTDIR}
+bash ../scripts/mhap-overlap-hifi.sh ${OUTDIR} ${PREFIX} ${READS} ${THREAD} ../scripts/ > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/overlap/"
@@ -26,13 +26,13 @@ READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fasta"
 mkdir -p ${OUTDIR}
 bash ../scripts/mhap-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${THREAD} ../scripts/ > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
-# #d.ananassae-pb-sequelii
-# OUTDIR="./d.ananassae-pb-sequelii/overlap/"
-# PREFIX="Dana.PB.HiFi.50X"
-# READS="../data/d.ananassae-pb-sequelii/Dana.PB.HiFi.50X.fasta"
+#d.ananassae-pb-sequelii
+OUTDIR="./d.ananassae-pb-sequelii/overlap/"
+PREFIX="Dana.PB.HiFi.50X"
+READS="../data/d.ananassae-pb-sequelii/Dana.PB.HiFi.50X.fasta"
 
-# mkdir -p ${OUTDIR}
-# bash ../scripts/mhap-overlap-hifi.sh ${OUTDIR} ${PREFIX} ${READS} ${THREAD} ../scripts/ > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+mkdir -p ${OUTDIR}
+bash ../scripts/mhap-overlap-hifi.sh ${OUTDIR} ${PREFIX} ${READS} ${THREAD} ../scripts/ > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #chm13-pb-sequelii-16X
 OUTDIR="./chm13-pb-sequelii-16X/overlap/"

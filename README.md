@@ -13,12 +13,6 @@ BLEND is a mechanism that can efficiently find fuzzy seed matches between sequen
 git clone https://github.com/CMU-SAFARI/BLEND.git blend
 ```
 
-* Alternatively, if you would like to compile the SIMD-compatible version of BLEND, you can clone BLEND with its [simde](https://github.com/simd-everywhere/simde) submodule:
-
-```bash
-git clone --recurse-submodules https://github.com/CMU-SAFARI/BLEND.git blend
-```
-
 ## Compiling from the source code
 
 Compilation process is similar to Minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation).
@@ -48,15 +42,14 @@ Below we show how to use blend for 1) finding overlapping reads and 2) read mapp
 BLEND provides the preset parameters depending on:
 
 * The application: 1) Finding overlapping reads and 2) read mapping.
-* Sequencing Technology: 1) Accurate long reads (e.g., PacBio HiFi reads), 2) erroneous long reads (e.g., PacBio CLR reads), and 2) short reads (i.e., Illumina paired-end reads).
-* Genome: 1) Human, 2) eukaryotic, and 3) bacterial genomes. 
+* Sequencing Technology: 1) Accurate long reads (e.g., PacBio HiFi reads), 2) erroneous long reads (e.g., PacBio CLR reads), and 2) short reads (i.e., Illumina paired-end reads). 
 
 ### Finding Overlapping Reads
 
 Assume that you would like to perform `all-vs-all` overlapping between all pairs of HiFi reads from a human genome located in file `reads.fastq`. To find overlapping reads and store them in the [PAF](https://github.com/lh3/miniasm/blob/master/PAF.md) file `output.paf`:
 
 ```bash
-blend -x ava-hifi --genome human reads.fastq reads.fastq > output.paf
+blend -x ava-hifi reads.fastq reads.fastq > output.paf
 ```
 
 ### Read Mapping
@@ -69,16 +62,30 @@ blend -ax map-pb ref.fasta reads.fastq > output.sam
 
 ## Getting Help
 
-Since we integrate the BLEND mechanism into Minimap2, most portion of the parameters are the same as explained in the [man page of Minimap2](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/minimap2.1) or as explained in the public page of [minimap2.1](https://lh3.github.io/minimap2/minimap2.html), which is subject to change as the new versions of Minamp2 role out. We explain the parameters unique to the BLEND implementation below. 
+Since we integrate the BLEND mechanism into Minimap2, most portion of the parameters are the same as explained in the [man page of Minimap2](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/minimap2.1) or as explained in the public page of [minimap2.1](https://lh3.github.io/minimap2/minimap2.html), which is subject to change as the new versions of Minimap2 role out. We explain the parameters unique to the BLEND implementation below. 
 
-The following option (i.e., `neighbors`) defines the number of consecutive k-mers that BLEND uses to generate a seed. Thus, if the k-mer length is `k`, the seed length is `neighbors + k - 1`. Default value is 10.
+The following option (i.e., `neighbors`) defines the number of k-mers that BLEND uses to generate a seed.
+
 ```bash
 --neighbors INT Combines INT amount of k-mers to generate a seed. [10]
 ```
 
-The following option (i.e., `fixed-bits`) defines the number of bits that BLEND uses for a hash value of a seed. By default, it uses 2 bits per character of a k-mer and, thus, 2*k bits for a hash value of a seed. This value can be decreased to increase the collision rate for assigning the same hash values for similar seeds, but also may start assigning the same hash value for slightly dissimilar seeds. 
+The following option (i.e., `fixed-bits`) defines the number of bits that BLEND uses when generating the hash values of seeds. By default, it uses 2 bits per character of a k-mer and, thus, 2*k bits for a hash value of a seed. This value can be decreased to increase the collision rate for assigning the same hash values for similar seeds, but also may start assigning the same hash value for slightly dissimilar seeds.
+ 
 ```bash
---fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [0].
+--fixed-bits INT BLEND uses INT number of bits when generating hash values of seeds rather than using 2*k number of bits. Useful when collision rate needs to be decreased than 2*k bits. Setting this option to 0 uses 2*k bits for hash values. [0]
+```
+
+The following option (i.e., `--strobemers`) tells BLEND that it should link consecutive `neighbors` many minimizer k-mers to generate a strobemer sequence as seed and use the hash values of these minimizer k-mers to generate a hash value for the strobemer sequence using the SimHash hashing strategy as suggested in the BLEND paper.
+
+```bash
+----strobemers link minimizers rather than the preceding k-mers of a single minimizer. (Number of minimizers to link is defined by --neighbors.)
+```
+
+The following option (i.e., `immediate`) tells BLEND that it should link consecutive `neighbors` many overlapping k-mers to generate a seed sequence and use the hash values of these k-mers to generate a hash value for the seed sequence using the SimHash hashing strategy as suggested in the BLEND paper.
+
+```bash
+--immediate use the hash values of consecutive k-mers to generate the hash values of seeds (defualt behavior).
 ```
 
 BLEND provides the following preset options:

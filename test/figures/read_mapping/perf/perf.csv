@@ -1,8 +1,8 @@
 Data,Tool,CPU Time,Peak Memory (GB)
-Human (HiFi),BLEND,9540.52,14.945672
+Human (HiFi),BLEND,19118.58,15.703424
 Human (HiFi),Minimap2,38314.88,18.719224
 Human (HiFi),LRA,82961.37,18.838364
-Human (HiFi),Winnowmap,572306.45,33.662796
+Human (HiFi),Winnowmap,369691.65,33.660208
 Human (HiFi),S-conLSH,1110817.75,87.608440
 D. ananassae (HiFi),BLEND,7113.51,16.801416
 D. ananassae (HiFi),Minimap2,26235.93,20.789004

@@ -13,12 +13,11 @@ for i in `echo ${BASE_DIR}/*.paf`; do fname=`basename $i | sed s/.paf//g`; bash 
 echo 'Dnadiff results (genome fraction and average identity is based on AlignedBases and AvgIdentity (M-to-M) in the second line of AvgIdentity:';
 for i in `echo ${BASE_DIR}/dnadiff/*.report`; do echo $i; grep "AlignedBases" $i; grep "AvgIdentity" $i | head -2; done
 
-samtools view -h ../read_mapping/minimap2.bam | ../../../scripts/paftools.js sam2paf - | sort -k6,6 -k8,8n > ${BASE_DIR}/reads-to-ref.paf
+#samtools view -h ../read_mapping/minimap2.bam | ../../../scripts/paftools.js sam2paf - | sort -k6,6 -k8,8n > ${BASE_DIR}/reads-to-ref.pa
 
-for i in `echo ${BASE_DIR}/*.paf`; do fname=`basename $i | sed s/.paf/.paf.ov-eval/g`; ../../../scripts/paftools.js ov-eval ${BASE_DIR}/reads-to-ref.paf $i > ${BASE_DIR}/$fname; done
+#for i in `echo ${BASE_DIR}/*.paf`; do fname=`basename $i | sed s/.paf/.paf.ov-eval/g`; ../../../scripts/paftools.js ov-eval ${BASE_DIR}/reads-to-ref.pa $i > ${BASE_DIR}/$fname; done
 
-rm ${BASE_DIR}/reads-to-ref.paf
-rm ${BASE_DIR}/reads-to-ref.paf.ov-eval
+#rm ${BASE_DIR}/reads-to-ref.pa
 
 echo;
 echo 'QUAST reasults are under the quast directory.';
@@ -29,7 +28,7 @@ echo;
 echo 'Overlap Statistics';
 for i in `echo ${BASE_DIR}/*_overlap.stats`; do echo $i; cat $i; done
 
-echo;
-echo 'Overlap Sensitivity';
-for i in `echo ${BASE_DIR}/*.paf.ov-eval`; do echo $i; cat $i; done
+#echo;
+#echo 'Overlap Sensitivity';
+#for i in `echo ${BASE_DIR}/*.paf.ov-eval`; do echo $i; cat $i; done
 
