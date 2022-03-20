@@ -37,9 +37,11 @@ def main():
             ax[0].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
             ax[0].tick_params(axis="x", which="both", direction="in", top=True)
 
+
             blend = data[data.Tool.eq('BLEND')]
             uniqtool = len(data.Tool.unique())
             labels = []
+            vals = []
             for item in data.Data.unique():
                 blendval = min(blend[blend.Data.eq(item)]["CPU Time"])
                 for tool in data.Tool.unique():
@@ -48,15 +50,23 @@ def main():
                         if len(tooldat[tooldat.Data.eq(item)]["CPU Time"]) > 0:
                             val = min(tooldat[tooldat.Data.eq(item)]["CPU Time"])/blendval
                             labels.append(r'$%.1f{\times}$' % val)
-                        else: 
+                            vals.append(val)
+                        else:
                             labels += ' '
+                            vals.append(None)
                     else:
                         labels += ' '
+                        vals.append(None)
             left,right = ax[0].get_ylim()
-            ax[0].set_ylim(left, right+right*400)
+            ax[0].set_ylim(left, right+right*600)
 
             ind = 0
             for c in ax[0].containers:
+                speedups = [x for x in vals[ind::uniqtool] if x is not None]
+                if ind == 1:
+                    print("\\newcommand\\avgovpM{$%.1f\\times$\\xspace}\n\\newcommand\\avgovpHM{$%.1f\\times$\\xspace}\n\\newcommand\\ovpM{$%.1f\\times$\\xspace}\n\\newcommand\\movpM{$%.1f\\times$\\xspace}\n" % (sum(speedups)/len(speedups), sum(speedups[:3])/3, max(speedups), min(speedups)))
+                elif ind == 2:
+                    print("\\newcommand\\avgovpMH{$%.1f\\times$\\xspace}\n\\newcommand\\avgovpHMH{$%.1f\\times$\\xspace}\n\\newcommand\\ovpMH{$%.1f\\times$\\xspace}\n\\newcommand\\movpMH{$%.1f\\times$\\xspace}\n" % (sum(speedups)/len(speedups), sum(speedups[:3])/3, max(speedups), min(speedups)))
                 ax[0].bar_label(c, labels=labels[ind::uniqtool], fmt='%gs', color='red', size='medium', rotation='90', fontweight='bold')
                 ind += 1
 
@@ -78,6 +88,7 @@ def main():
             blend = data[data.Tool.eq('BLEND')]
             uniqtool = len(data.Tool.unique())
             labels = []
+            vals = []
             for item in data.Data.unique():
                 blendval = min(blend[blend.Data.eq(item)]["Peak Memory (GB)"])
                 for tool in data.Tool.unique():
@@ -86,15 +97,23 @@ def main():
                         if len(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"]) > 0:
                             val = min(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"])/blendval
                             labels.append(r'$%.1f{\times}$' % val)
+                            vals.append(val)
                         else: 
                             labels += ' '
+                            vals.append(None)
                     else:
                         labels += ' '
+                        vals.append(None)
             left,right = ax[1].get_ylim()
             ax[1].set_ylim(left, right+right*10)
 
             ind = 0
             for c in ax[1].containers:
+                mems = [x for x in vals[ind::uniqtool] if x is not None]
+                if ind == 1:
+                    print("\\newcommand\\avgovmM{$%.1f\\times$\\xspace}\n\\newcommand\\avgovmHM{$%.1f\\times$\\xspace}\n\\newcommand\\ovmM{$%.1f\\times$\\xspace}\n\\newcommand\\movmM{$%.1f\\times$\\xspace}\n" % (sum(mems)/len(mems), sum(mems[:3])/3, max(mems), min(mems)))
+                elif ind == 2:
+                    print("\\newcommand\\avgovmMH{$%.1f\\times$\\xspace}\n\\newcommand\\avgovmHMH{$%.1f\\times$\\xspace}\n\\newcommand\\ovmMH{$%.1f\\times$\\xspace}\n\\newcommand\\movmMH{$%.1f\\times$\\xspace}\n" % (sum(mems)/len(mems), sum(mems[:3])/3, max(mems), min(mems)))
                 ax[1].bar_label(c, labels=labels[ind::uniqtool], fmt='%gs', color='red', size='medium', rotation='90')
                 ind += 1
 

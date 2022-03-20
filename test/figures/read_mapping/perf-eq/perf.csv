@@ -1,19 +1,19 @@
 Data,Tool,CPU Time,Peak Memory (GB)
-Human (HiFi),BLEND,19118.58,15.703424
+Human (HiFi),BLEND-I,20658.7,13.225856
 Human (HiFi),Minimap2,38314.88,18.719224
-Human (HiFi),Minimap2-eq,30471.38,10.765520
-D. ananassae (HiFi),BLEND,7113.51,16.801416
+Human (HiFi),Minimap2-Eq,30471.38,10.765520
+D. ananassae (HiFi),BLEND-I,10677.47,18.341688
 D. ananassae (HiFi),Minimap2,26235.93,20.789004
-D. ananassae (HiFi),Minimap2-eq,14061.55,17.634732
-E. coli (HiFi),BLEND,130.62,2.533120
+D. ananassae (HiFi),Minimap2-Eq,14061.55,17.634732
+E. coli (HiFi),BLEND-I,146.21,1.368460
 E. coli (HiFi),Minimap2,173.41,1.385636
-E. coli (HiFi),Minimap2-eq,144.94,1.410636
-Yeast (PacBio CLR),BLEND,1722.03,5.003548
-Yeast (PacBio CLR),Minimap2,1579.49,4.862608
-Yeast (PacBio CLR),Minimap2-eq,1579.49,4.862608
-Yeast (ONT),BLEND,1153.33,7.169748
-Yeast (ONT),Minimap2,1189.22,5.265364
-Yeast (ONT),Minimap2-eq,1271.29,7.050948
-Yeast (Illumina),BLEND,344.42,0.824008
+E. coli (HiFi),Minimap2-Eq,144.94,1.410636
+Yeast (PacBio CLR),BLEND-I,1152.53,7.169748
+Yeast (PacBio CLR),Minimap2,1189.22,5.265364
+Yeast (PacBio CLR),Minimap2-Eq,1271.29,7.050948
+Yeast (ONT),BLEND-I,716.09,6.078660
+Yeast (ONT),Minimap2,530.87,4.156224
+Yeast (ONT),Minimap2-Eq,603.61,6.285616
+Yeast (Illumina),BLEND-I,344.42,0.824008
 Yeast (Illumina),Minimap2,391.97,0.883320
-Yeast (Illumina),Minimap2-eq,279.77,0.745892
+Yeast (Illumina),Minimap2-Eq,279.77,0.745892

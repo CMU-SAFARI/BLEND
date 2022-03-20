@@ -13,16 +13,15 @@ E. coli (HiFi),Minimap2,173.41,1.385636
 E. coli (HiFi),LRA,227.49,2.220888
 E. coli (HiFi),Winnowmap,607.49,2.226940
 E. coli (HiFi),S-conLSH,1885.93,2.009712
-Yeast (PacBio CLR),BLEND,1722.03,5.003548
-Yeast (PacBio CLR),Minimap2,1579.49,4.862608
-Yeast (PacBio CLR),LRA,30491.41,5.351892
-Yeast (PacBio CLR),Winnowmap,3413.07,20.750036
-Yeast (PacBio CLR),S-conLSH,7193.68,5.058412
-Yeast (ONT),BLEND,1153.33,7.169748
-Yeast (ONT),Minimap2,1189.22,5.265364
-Yeast (ONT),LRA,13537.31,5.129968
-Yeast (ONT),Winnowmap,2029.16,11.340288
-Yeast (ONT),S-conLSH,9098.31,5.055524
+Yeast (PacBio CLR),BLEND,1152.53,7.169748
+Yeast (PacBio CLR),Minimap2,1189.22,5.265364
+Yeast (PacBio CLR),LRA,13537.31,5.129968
+Yeast (PacBio CLR),Winnowmap,2029.16,11.340288
+Yeast (PacBio CLR),S-conLSH,9098.31,5.055524
+Yeast (ONT),BLEND,716.09,6.078660
+Yeast (ONT),Minimap2,530.87,4.156224
+Yeast (ONT),LRA,3939.4,2.483952
+Yeast (ONT),Winnowmap,3134.01,16.331496
+Yeast (ONT),S-conLSH,4887.95,3.276504
 Yeast (Illumina),BLEND,344.42,0.824008
 Yeast (Illumina),Minimap2,391.97,0.883320
-

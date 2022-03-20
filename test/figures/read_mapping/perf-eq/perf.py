@@ -37,13 +37,13 @@ def main():
             ax[0].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
             ax[0].tick_params(axis="x", which="both", direction="in", top=True)
 
-            blend = data[data.Tool.eq('BLEND')]
+            blend = data[data.Tool.eq('BLEND-I')]
             uniqtool = len(data.Tool.unique())
             labels = []
             for item in data.Data.unique():
                 blendval = min(blend[blend.Data.eq(item)]["CPU Time"])
                 for tool in data.Tool.unique():
-                    if tool != 'BLEND':
+                    if tool != 'BLEND-I':
                         tooldat = data[data.Tool.eq(tool)]
                         if len(tooldat[tooldat.Data.eq(item)]["CPU Time"]) > 0:
                             val = min(tooldat[tooldat.Data.eq(item)]["CPU Time"])/blendval
@@ -75,13 +75,13 @@ def main():
             ax[1].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
             ax[1].tick_params(axis="x", which="both", direction="in", top=True)
 
-            blend = data[data.Tool.eq('BLEND')]
+            blend = data[data.Tool.eq('BLEND-I')]
             uniqtool = len(data.Tool.unique())
             labels = []
             for item in data.Data.unique():
                 blendval = min(blend[blend.Data.eq(item)]["Peak Memory (GB)"])
                 for tool in data.Tool.unique():
-                    if tool != 'BLEND':
+                    if tool != 'BLEND-I':
                         tooldat = data[data.Tool.eq(tool)]
                         if len(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"]) > 0:
                             val = min(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"])/blendval
@@ -100,7 +100,7 @@ def main():
 
             plt.tight_layout()
             plt.subplots_adjust(top=0.95, bottom=0.04, left=0.05, right=0.994, hspace=0.05, wspace=0.2)
-            plt.savefig(f'read_mapping-perf-all_{sample}.pdf')
+            plt.savefig(f'read_mapping-perf-eq_{sample}.pdf')
             plt.show()
 
 def get_args():
