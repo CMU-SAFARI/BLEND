@@ -1,9 +1,12 @@
 # BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches
 
-BLEND is a mechanism that can efficiently find fuzzy seed matches between sequences to significantly improve the performance and accuracy while reducing the memory space usage of two important applications: 1) finding overlapping reads and 2) read mapping. Finding fuzzy seed matches enable BLEND to find both 1) exact-matching seeds and 2) highly similar seeds. We integrate the BLEND mechanism into [Minimap2](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850). We make the following changes in the original Minimap2 implementation:
+BLEND is a mechanism that can generate the same hash value for highly similar seeds to find fuzzy (approximate) seed matches between sequences with a single lookup from their hash values. By replacing their hash functions with BLEND, any seeding technique can integrate BLEND to generate the hash values of seeds. By efficiently finding fuzzy seed matches with a single lookup, BLEND can significantly improve the performance and accuracy while reducing the memory footprint of two important applications: 1) read overlapping and 2) read mapping. Apart from these two applications, we envision that any application that uses seeds can exploit BLEND. BLEND is described in [arXiv](https://doi.org/10.48550/arXiv.2112.08687).
 
-- We enable the Minimap2 implementation so that it can find fuzzy seed matches using the BLEND mechanism as the original implementation can only find the exact-matching seeds between sequences. To this end, we change the [sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c) implementation of Minimap2 so that 1) we can generate the seeds by concatanating each minimizer k-mer with its immediately preceding k-mers and 2) generate the hash values for seeds such that a pair of highly similar seeds can have the same hash value to find fuzzy seed matches with a single look-up.
-- We enable the Minimap2 implementation to use seeds longer than 256 bases so that it can store longer seeds when using BLEND by combining the minimizer k-mer with *many* neighbor k-mers (e.g., hundreds), if necessary. The current implementation of Minimap2 allocates 8-bits to store seed lengths up to 256 characters. We change this requirement in various places of the implementation (e.g., [line 112 in sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L112) and [line 239 in index.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/index.c#L239)) so that BLEND can use 14 bits to store seed lengths up to 16384 characters. We do this because BLEND merges many k-mers into a single seed, which may be much larger than a 256 character-long sequence.
+For proof of work, we integrate the BLEND mechanism into [minimap2](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850). We show the benefits of BLEND when used with the minimizer and strobemer seeding techniques. We make the following changes in the original minimap2 implementation:
+
+- We modify the original minimap2 implementation so that minimap2 can assign the same hash values for highly similar seeds it finds. To this end, we change the [sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c) implementation of minimap2 to 1) generate the hash values of k-mers and 2) decide the minimizer k-mer based on the hash values BLEND generates.
+- We implement a simple version of the strobemer seeds in minimap2 in three steps. First, we find minimizer k-mers using the [original hash function](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L28-L38) that minimap2 uses. Second, we link each `n` consecutive minimizer k-mer in a strobemer seeds. Third, we use the BLEND mechanism for generating the hash value of the strobemer seed based on the hash values of linked k-mers.
+- We enable the minimap2 implementation to use seeds longer than 256 characters so that it can store longer seeds when using BLEND. The current implementation of minimap2 allocates 8 bits to store seed lengths up to 256 characters. We change this requirement in various places of the implementation (e.g., [line 112 in sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L112) and [line 239 in index.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/index.c#L239)) so that BLEND can use 14 bits to store seed lengths up to 16384 characters. We do this because BLEND merges many k-mers into a single seed, which can be much larger than a 256 character-long seed.
 
 ## Cloning the source code
 
@@ -15,7 +18,7 @@ git clone https://github.com/CMU-SAFARI/BLEND.git blend
 
 ## Compiling from the source code
 
-Compilation process is similar to Minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation).
+Compilation process is similar to minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation).
 
 Before compiling BLEND:
 
@@ -62,7 +65,7 @@ blend -ax map-pb ref.fasta reads.fastq > output.sam
 
 ## Getting Help
 
-Since we integrate the BLEND mechanism into Minimap2, most portion of the parameters are the same as explained in the [man page of Minimap2](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/minimap2.1) or as explained in the public page of [minimap2.1](https://lh3.github.io/minimap2/minimap2.html), which is subject to change as the new versions of Minimap2 role out. We explain the parameters unique to the BLEND implementation below. 
+Since we integrate the BLEND mechanism into minimap2, most portion of the parameters are the same as explained in the [man page of minimap2](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/minimap2.1) or as explained in the public page of [minimap2.1](https://lh3.github.io/minimap2/minimap2.html), which is subject to change as the new versions of minimap2 role out. We explain the parameters unique to the BLEND implementation below. 
 
 The following option (i.e., `neighbors`) defines the number of k-mers that BLEND uses to generate a seed.
 
@@ -107,7 +110,7 @@ We explain how to reproduce the results we show in the BLEND paper in the [test 
 
 If you use BLEND in your work, please cite:
 
-> Can Firtina, Jisung Park, Jeremie S. Kim, Mohammed Alser, Damla Senol Cali, Taha Shahroodi, 
+> Can Firtina, Jisung Park, Mohammed Alser, Jeremie S. Kim, Damla Senol Cali, Taha Shahroodi, 
 > Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu
 > "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches"
 > arXiv preprint **arXiv**:2112.08687 (2021). [DOI](https://doi.org/10.48550/arXiv.2112.08687)
