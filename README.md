@@ -1,4 +1,4 @@
-# BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches
+# BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis
 
 BLEND is a mechanism that can generate the same hash value for highly similar seeds to find fuzzy (approximate) seed matches between sequences with a single lookup from their hash values. By replacing their hash functions with BLEND, any seeding technique can integrate BLEND to generate the hash values of seeds. By efficiently finding fuzzy seed matches with a single lookup, BLEND can significantly improve the performance and accuracy while reducing the memory footprint of two important applications: 1) read overlapping and 2) read mapping. Apart from these two applications, we envision that any application that uses seeds can exploit BLEND. BLEND is described in [arXiv](https://doi.org/10.48550/arXiv.2112.08687).
 
@@ -112,6 +112,6 @@ If you use BLEND in your work, please cite:
 
 > Can Firtina, Jisung Park, Mohammed Alser, Jeremie S. Kim, Damla Senol Cali, Taha Shahroodi, 
 > Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu
-> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches"
+> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis"
 > arXiv preprint **arXiv**:2112.08687 (2021). [DOI](https://doi.org/10.48550/arXiv.2112.08687)
 
