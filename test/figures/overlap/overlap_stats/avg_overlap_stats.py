@@ -1,107 +1,154 @@
-import numpy as np
+import sys
+import matplotlib.pyplot as plt 
+import matplotlib 
+import numpy as np 
+import seaborn as sns
 import pandas as pd
 import csv
-import seaborn as sns
-import sys
-import matplotlib.pyplot as plt
 from collections import OrderedDict
-from argparse import ArgumentParser
 import pathlib
 
-def main():
-    args = get_args()
-    sns.set(style='white')
-    palette=sns.color_palette('tab10')
-    colors = ["#4b71bb", "#f0c041", "#5FA137", "#db8043", "#a3a3a3"]
-    enums = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
-    dind = 0
-    tot_data = 0
-    g = []
-    for f in args.input:
-        sample = f.replace(".csv", "")
-        with open(f, 'r') as csvfile:
-            if dind == 0:
-                dind += 1
-                data = pd.read_csv(csvfile)
-                tot_data = len(data.Data.unique())
-                fig, ax = plt.subplots(2, tot_data, figsize=(11.25,5))
-                ind = 0
-                for dname in data.Data.unique():
-                    selData = data[data.Data.eq(dname)]
-                    g.append(sns.barplot(ax=ax[0][ind], x = "Data", y = "Avg. Overlap Len.", hue = "Tool", data = selData, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
-                    ax[0][ind].grid(linestyle='--', linewidth=0.4)
+matplotlib.rc("figure", facecolor="white")
+width = 0.5
+palette=sns.color_palette('tab10')
+colors = ["#4b71bb", "#f0c041", "#5FA137", "#db8043", "#a3a3a3", "#aa4499", "#6799ce"]
+f="overlap_stats.csv"
 
-                    labels = [item.get_text() for item in ax[0][ind].get_xticklabels()]
-                    ax[0][ind].set_xticklabels('')
-                    ax[0][ind].set_xlabel("")
-                    ax[0][ind].set_ylabel("")
+with open(f, 'r') as csvfile:
+	csvf = pd.read_csv(csvfile)
+	idx=csvf['idx']
+	n_overlaps=csvf['Number of Overlaps (M)']
+	avg_overlaplen=csvf['Avg. Overlap Len. (Kbp)']
+	avg_seeds=csvf['Avg. Seeds']
+	tools=csvf['Tool']
+	data=csvf['Data']
+	
+	#calculating the improvements by X
+	n_overlapsX=[]
+	n_overlapsXVal=[]
+	avg_overlapX=[]
+	avg_overlapXVal=[]
+	avg_seedsX=[]
+	avg_seedsXVal=[]
 
-                    ax[0][ind].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
-                    ax[0][ind].tick_params(axis="x", which="both", direction="in", top=True)
+	for i in range(len(data)):
+		if tools[i] == 'BLEND':
+			blend_overlaps=n_overlaps[i]
+			n_overlapsX.append(' ')
+			n_overlapsXVal.append(1)
+			
+			blend_ovlen=avg_overlaplen[i]
+			avg_overlapX.append(' ')
+			avg_overlapXVal.append(1)
+			
+			blend_avgseed=avg_seeds[i]
+			avg_seedsX.append(' ')
+			avg_seedsXVal.append(1)
+			
+		else:
+			n_overlapsXVal.append(n_overlaps[i]/blend_overlaps)
+			n_overlapsX.append(r'$%.1f{\times}$' % n_overlapsXVal[i])
 
-                    left,right = ax[0][ind].get_ylim()
-                    ax[0][ind].set_ylim(left, right+right*0.1)
-                    ax[0][ind].get_legend().set_visible(False)
-                    ind += 1
-            else:
-                ind = 0
-                data = pd.read_csv(csvfile)
-                tot_data = len(data.Data.unique())
-                for dname in data.Data.unique():
-                    selData = data[data.Data.eq(dname)]
-                    g.append(sns.barplot(ax=ax[1][ind], x = "Data", y = "Avg. Seeds", hue = "Tool", data = selData, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
-                    ax[1][ind].grid(linestyle='--', linewidth=0.4)
+			avg_overlapXVal.append(avg_overlaplen[i]/blend_ovlen)
+			avg_overlapX.append(r'$%.1f{\times}$' % avg_overlapXVal[i])
 
-                    labels = [item.get_text() for item in ax[1][ind].get_xticklabels()]
-                    ax[1][ind].set_xticklabels(labels,rotation = 0, ha = 'center', fontweight='bold', fontsize='large')
-                    ax[1][ind].set_xlabel("")
-                    ax[1][ind].set_ylabel("")
+			avg_seedsXVal.append(avg_seeds[i]/blend_avgseed)
+			avg_seedsX.append(r'$%.1f{\times}$' % avg_seedsXVal[i])
+			
+fig, ax = plt.subplots(3, 7, figsize=(7,7))
 
-                    ax[1][ind].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
-                    ax[1][ind].tick_params(axis="x", which="both", direction="in", top=True)
+####################################################################################################
+##Total overlap bases
+####################################################################################################
 
-                    blend = data[data.Tool.eq('BLEND')]
-                    uniqtool = len(data.Tool.unique())
-                    labels = []
-                    blendval = min(blend[blend.Data.eq(dname)]["Avg. Seeds"])
-                    for tool in data.Tool.unique():
-                        if tool != 'BLEND':
-                            tooldat = data[data.Tool.eq(tool)]
-                            if len(tooldat[tooldat.Data.eq(dname)]["Avg. Seeds"]) > 0:
-                                val = min(tooldat[tooldat.Data.eq(dname)]["Avg. Seeds"])/blendval
-                                labels.append(r'$%.2f{\times}$' % val)
-                            else: 
-                                labels += ' '
-                        else:
-                            labels += ' '
-                    left,right = ax[1][ind].get_ylim()
-                    ax[1][ind].set_ylim(left, right+right*0.1)
+ax[0][0].bar(idx[0:3], n_overlaps[0:3], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][0].set_yscale("log")
+ax[0][1].bar(idx[3:6], n_overlaps[3:6], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][1].set_yscale("log")
+ax[0][2].bar(idx[6:9], n_overlaps[6:9], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][3].bar(idx[9:11], n_overlaps[9:11], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][4].bar(idx[11:14], n_overlaps[11:14], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][5].bar(idx[14:17], n_overlaps[14:17], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0][6].bar(idx[17:20], n_overlaps[17:20], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
 
-                    ind2 = 0
-                    for c in ax[1][ind].containers:
-                        ax[1][ind].bar_label(c, labels=labels[ind2::uniqtool], fmt='%gs', color='red', size='medium', rotation='90')
-                        ind2 += 1
+cidx=0
+bidx=0
+for i in range(len(ax[0])):
+	for c in ax[0][i].containers:
+		ax[0][i].bar_label(c, labels=n_overlapsX[bidx:bidx+len(c.datavalues)], fmt='%gs', color='red', size='large', rotation='vertical', fontweight='bold')
+		bidx += len(c.datavalues)
+		left,right = ax[0][i].get_ylim()
+		ax[0][i].set_ylim(left-left*0.8, right+right*0.35)
+		ax[0][i].margins(x=0.01)
+		ax[0][i].grid(axis='y', linestyle='--', linewidth=0.2) 
+		ax[0][i].tick_params(axis="x", which="both", pad=10, direction="in", left=True, labelleft=True) 
+		ax[0][i].tick_params(axis="y", which="both", pad=3, direction="in", rotation=0, top=True) 
+		ax[0][i].set_xticklabels([])
+		# ax[0][i].set_yticklabels([])
 
-                    left,right = ax[1][ind].get_ylim()
-                    ax[1][ind].set_ylim(left, right+right*0.25)
-                    ax[1][ind].get_legend().set_visible(False)
-                    ind += 1
-            
-    ax[0][0].set_ylabel("Avg. Overlap Length (Kbp)", fontweight='bold', fontsize='medium')
-    ax[1][0].set_ylabel("Avg. Seeds per Overlap", fontweight='bold', fontsize='medium')
-    handles, labels = ax[0][2].get_legend_handles_labels()
-    fig.legend(handles, labels, bbox_to_anchor=(0.5,1.03), loc='upper center', ncol=len(labels), facecolor='white', framealpha=0, fontsize="large")
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.95, bottom=0.05, left=0.05, right=0.994, hspace=0.05, wspace=0.25)
-    plt.savefig(f'overlap_stats-all_{sample}.pdf')
-    plt.show()
+ax[0][3].tick_params(axis="y", which="both", pad=2, direction="in", rotation=65, top=True) 
 
-def get_args():
-    parser = ArgumentParser(description="Creates PDF plots")
-    parser.add_argument("input",
-                        nargs='+',
-                        help="the dist file(s) to use for plotting")
-    return parser.parse_args()
+left,right = ax[0][0].get_ylim()
+ax[0][0].set_ylim(left-left*0.8, right+right*30)
 
-if __name__ == '__main__':
-    main()
+left,right = ax[0][1].get_ylim()
+ax[0][1].set_ylim(left-left*0.8, right+right*30)
+
+####################################################################################################
+##Average overlap
+####################################################################################################
+
+ax[1][0].bar(idx[0:3], avg_overlaplen[0:3], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][1].bar(idx[3:6], avg_overlaplen[3:6], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][2].bar(idx[6:9], avg_overlaplen[6:9], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][3].bar(idx[9:11], avg_overlaplen[9:11], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][4].bar(idx[11:14], avg_overlaplen[11:14], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][5].bar(idx[14:17], avg_overlaplen[14:17], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1][6].bar(idx[17:20], avg_overlaplen[17:20], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+
+cidx=0
+bidx=0
+for i in range(len(ax[1])):
+	for c in ax[1][i].containers:
+		ax[1][i].bar_label(c, labels=avg_overlapX[bidx:bidx+len(c.datavalues)], fmt='%gs', color='red', size='large', rotation='vertical', fontweight='bold')
+		bidx += len(c.datavalues)
+	left,right = ax[1][i].get_ylim()
+	ax[1][i].set_ylim(left-left*0.8, right+right*0.35)
+	ax[1][i].margins(x=0.01)
+	ax[1][i].grid(axis='y', linestyle='--', linewidth=0.2) 
+	ax[1][i].tick_params(axis="x", which="both", pad=10, direction="in", left=True, labelleft=True) 
+	ax[1][i].tick_params(axis="y", which="both", pad=3, direction="in", rotation=0, top=True) 
+	ax[1][i].set_xticklabels([])
+	# ax[1][i].set_yticklabels([])
+
+####################################################################################################
+##Average seeds
+####################################################################################################
+
+ax[2][0].bar(idx[0:3], avg_seeds[0:3], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][1].bar(idx[3:6], avg_seeds[3:6], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][2].bar(idx[6:9], avg_seeds[6:9], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][3].bar(idx[9:11], avg_seeds[9:11], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][4].bar(idx[11:14], avg_seeds[11:14], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][5].bar(idx[14:17], avg_seeds[14:17], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[2][6].bar(idx[17:20], avg_seeds[17:20], color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+
+cidx=0
+bidx=0
+for i in range(len(ax[2])):
+	for c in ax[2][i].containers:
+		ax[2][i].bar_label(c, labels=avg_seedsX[bidx:bidx+len(c.datavalues)], fmt='%gs', color='red', size='large', rotation='vertical', fontweight='bold')
+		bidx += len(c.datavalues)
+	left,right = ax[2][i].get_ylim()
+	ax[2][i].set_ylim(left-left*0.8, right+right*0.4)
+	ax[2][i].margins(x=0.01)
+	ax[2][i].grid(axis='y', linestyle='--', linewidth=0.2) 
+	ax[2][i].tick_params(axis="x", which="both", pad=10, direction="in", left=True, labelleft=True) 
+	ax[2][i].tick_params(axis="y", which="both", pad=3, direction="in", rotation=0, top=True) 
+	ax[2][i].set_xticklabels([])
+	# ax[2][i].set_yticklabels([])
+
+plt.subplots_adjust(top=0.99, bottom=0.015, left=0.05, right=0.995, hspace=0.2, wspace=0.5)
+fig.savefig("overlapping_stats.pdf")
+
+plt.show()

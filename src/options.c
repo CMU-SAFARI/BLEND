@@ -91,9 +91,9 @@ int mm_set_opt(const char *presetX, mm_idxopt_t *io, mm_mapopt_t *mo)
 	if (presetX == 0) {
 		mm_idxopt_init(io);
 		mm_mapopt_init(mo);
-	} else if (strcmp(presetX, "map-ont") == 0) { //BLEND-I faster & more accurate than BLEND-S
-		io->flag = 0, io->k = 7; io->w = 10;
-		io->blend_bits = 32; io->n_neighbors = 11;
+	} else if (strcmp(presetX, "map-ont") == 0) { //BLEND-I faster & more accurate than BLEND-S (second/third best k=7/15/13, n=9/5)
+		io->flag = 0, io->k = 9; io->w = 10;
+		io->blend_bits = 32; io->n_neighbors = 7;
 	} else if (strcmp(presetX, "ava-ont") == 0) { //BLEND-I is more accurate than BLEND-S (BLEND-S faster)
 		io->flag = 0, io->k = 15, io->w = 10;
 		io->blend_bits = 30; io->n_neighbors = 5;
@@ -101,9 +101,9 @@ int mm_set_opt(const char *presetX, mm_idxopt_t *io, mm_mapopt_t *mo)
 		mo->min_chain_score = 100, mo->pri_ratio = 0.0f, mo->max_chain_skip = 25;
 		mo->bw = mo->bw_long = 2000;
 		mo->occ_dist = 0;
-	} else if (strcmp(presetX, "map-pb") == 0) { //BLEND-I faster & more accurate than BLEND-S (older = k=19 for both, n=5 for both)
-		io->flag |= MM_I_HPC, io->k = 7; io->w = 10;
-		io->blend_bits = 32; io->n_neighbors = 15;
+	} else if (strcmp(presetX, "map-pb") == 0) { //BLEND-I faster & more accurate than BLEND-S (second best k = 7, n = 9)
+		io->flag |= MM_I_HPC, io->k = 13; io->w = 10;
+		io->blend_bits = 32; io->n_neighbors = 7;
 	} else if (strcmp(presetX, "ava-pb") == 0) { //BLEND-I is more accurate than BLEND-S (BLEND-S faster)
 		io->flag |= MM_I_HPC, io->k = 19; io->w = 10;
 		io->blend_bits = 38; io->n_neighbors = 5;

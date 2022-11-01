@@ -1,114 +1,98 @@
-import numpy as np
+import sys
+import matplotlib.pyplot as plt 
+import matplotlib 
+import numpy as np 
+import seaborn as sns
 import pandas as pd
 import csv
-import seaborn as sns
-import sys
-import matplotlib.pyplot as plt
 from collections import OrderedDict
-from argparse import ArgumentParser
 import pathlib
 
-def main():
-    args = get_args()
-    sns.set(style='white')
-    palette=sns.color_palette('tab10')
-    colors = ["#4b71bb", "#f0c041", "#db8043", "#a3a3a3"]
-    
-    for f in args.input:
-        sample = f.replace(".csv", "")
-        enums = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','r','s','t','u','v','w','x','y','z']
-        with open(f, 'r') as csvfile:
-            data = pd.read_csv(csvfile)
-            fig, ax = plt.subplots(2, 1, figsize=(10,5))
-            g = []
-            g.append(sns.barplot(ax=ax[0], x = "Data", y = "CPU Time", hue = "Tool", data = data, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
-            ax[0].grid(linestyle='--', linewidth=0.4)
-            handles, labels = ax[0].get_legend_handles_labels()
-            ax[0].legend(bbox_to_anchor=(0.5,1.18), loc='upper center', ncol=len(labels), facecolor='white', framealpha=0, fontsize="large")
-            # labels = ['('+enums[idx]+') '+item.get_text() for idx, item in enumerate(ax[0].get_xticklabels())]
-            # labels = [item.get_text() for idx, item in enumerate(ax[0].get_xticklabels())]
+matplotlib.rc("figure", facecolor="white")
+width = 0.5
+palette=sns.color_palette('tab10')
+# colors = ["#4b71bb", "#f0c041", "#5FA137", "#db8043", "#a3a3a3", "#aa4499", "#6799ce"]
+colors = ["#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137", "#4b71bb", "#f0c041", "#5FA137"]
+f="perf.csv"
 
-            ax[0].set_xticklabels('')
-            # ax[0].set_xticklabels(labels, rotation = 0, ha = 'center', fontweight='bold', fontsize='medium')
-            ax[0].set_xlabel("")
-            ax[0].set_ylabel("CPU Time (sec)", fontweight='bold', fontsize='large')
-            ax[0].set_yscale("log")
-            
-            ax[0].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
-            ax[0].tick_params(axis="x", which="both", direction="in", top=True)
+with open(f, 'r') as csvfile:
+	csvf = pd.read_csv(csvfile)
+	idx=csvf['idx']
+	cpu=csvf['CPU Time']
+	mem=csvf['Peak Memory (GB)']
+	tools=csvf['Tool']
+	data=csvf['Data']
+	
+	#calculating the improvements by X
+	memX=[]
+	memXVal=[]
+	cpuX=[]
+	cpuXVal=[]
+	for i in range(len(data)):
+		if tools[i] == 'BLEND-I':
+			blendcpu=cpu[i]
+			blendmem=mem[i]
+			cpuXVal.append(1)
+			cpuX.append(' ')
+			memXVal.append(1)
+			memX.append(' ')
+		else:
+			cpuXVal.append(cpu[i]/blendcpu)
+			memXVal.append(mem[i]/blendmem)
+			cpuX.append(r'$%.1f{\times}$' % cpuXVal[i])
+			memX.append(r'$%.1f{\times}$' % memXVal[i])
 
-            blend = data[data.Tool.eq('BLEND-I')]
-            uniqtool = len(data.Tool.unique())
-            labels = []
-            for item in data.Data.unique():
-                blendval = min(blend[blend.Data.eq(item)]["CPU Time"])
-                for tool in data.Tool.unique():
-                    if tool != 'BLEND-I':
-                        tooldat = data[data.Tool.eq(tool)]
-                        if len(tooldat[tooldat.Data.eq(item)]["CPU Time"]) > 0:
-                            val = min(tooldat[tooldat.Data.eq(item)]["CPU Time"])/blendval
-                            labels.append(r'$%.1f{\times}$' % val)
-                        else: 
-                            labels += ' '
-                    else:
-                        labels += ' '
-            left,right = ax[0].get_ylim()
-            ax[0].set_ylim(left, right+right*400)
+fig, ax = plt.subplots(2, 1, figsize=(8,5))
 
-            ind = 0
-            for c in ax[0].containers:
-                ax[0].bar_label(c, labels=labels[ind::uniqtool], fmt='%gs', color='red', size='medium', rotation='90', fontweight='bold')
-                ind += 1
+####################################################################################################
+##Overlapping CPU
+####################################################################################################
 
-            g.append(sns.barplot(ax=ax[1], x = "Data", y = "Peak Memory (GB)", hue = "Tool", data = data, palette=colors, alpha=0.9, edgecolor='black', linewidth=1.2))
-            ax[1].grid(linestyle='--', linewidth=0.4)
-            # handles, labels = ax[1].get_legend_handles_labels()
-            # ax[1].legend(bbox_to_anchor=(0.5,1.12), loc='upper center', ncol=len(labels), facecolor='white', framealpha=0, fontsize="medium")
-            ax[1].get_legend().set_visible(False)
-            labels = [item.get_text() for idx, item in enumerate(ax[1].get_xticklabels())]
+ax[0].bar(idx, cpu, color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[0].set_yscale("log")
 
-            ax[1].set_xticklabels(labels, rotation = 0, ha = 'center', fontweight='bold', fontsize='large')
-            ax[1].set_xlabel("")
-            ax[1].set_ylabel("Peak Memory (GB)", fontweight='bold', fontsize='large')
-            ax[1].set_yscale("log")
-            
-            ax[1].tick_params(axis="y", which="both", direction="in", left=True, width=0.5)
-            ax[1].tick_params(axis="x", which="both", direction="in", top=True)
+cidx=0
+bidx=0
+for c in ax[0].containers:
+	ax[0].bar_label(c, labels=cpuX[bidx:bidx+len(c.datavalues)], fmt='%gs', color='red', size='large', rotation='vertical', fontweight='bold')
+	bidx += len(c.datavalues)
 
-            blend = data[data.Tool.eq('BLEND-I')]
-            uniqtool = len(data.Tool.unique())
-            labels = []
-            for item in data.Data.unique():
-                blendval = min(blend[blend.Data.eq(item)]["Peak Memory (GB)"])
-                for tool in data.Tool.unique():
-                    if tool != 'BLEND-I':
-                        tooldat = data[data.Tool.eq(tool)]
-                        if len(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"]) > 0:
-                            val = min(tooldat[tooldat.Data.eq(item)]["Peak Memory (GB)"])/blendval
-                            labels.append(r'$%.1f{\times}$' % val)
-                        else: 
-                            labels += ' '
-                    else:
-                        labels += ' '
-            left,right = ax[1].get_ylim()
-            ax[1].set_ylim(left, right+right*10)
+left,right = ax[0].get_ylim()
+ax[0].set_ylim(left-left*0.8, right+right*8)
+ax[0].margins(x=0.01)
+ax[0].grid(linestyle='--', linewidth=0.2) 
+ax[0].grid(axis='x', linestyle='--', linewidth=2) 
 
-            ind = 0
-            for c in ax[1].containers:
-                ax[1].bar_label(c, labels=labels[ind::uniqtool], fmt='%gs', color='red', size='medium', rotation='90')
-                ind += 1
+ax[0].set_xticks([4,8,12,16])
+ax[0].tick_params(axis="x", which="both", pad=10, direction="in", left=True, labelleft=True) 
+ax[0].tick_params(axis="y", which="both", pad=10, direction="in", rotation=0, top=True) 
+ax[0].set_xticklabels([])
 
-            plt.tight_layout()
-            plt.subplots_adjust(top=0.95, bottom=0.04, left=0.06, right=0.994, hspace=0.05, wspace=0.2)
-            plt.savefig(f'overlap_finding-perf-eq_{sample}.pdf')
-            plt.show()
+####################################################################################################
+##Overlapping Memory
+####################################################################################################
 
-def get_args():
-    parser = ArgumentParser(description="Creates PDF plots")
-    parser.add_argument("input",
-                        nargs='+',
-                        help="the dist file(s) to use for plotting")
-    return parser.parse_args()
+ax[1].bar(idx, mem, color=colors, width=0.99, align="center", edgecolor="black", linewidth=1.2)
+ax[1].set_yscale("log")
 
-if __name__ == '__main__':
-    main()
+cidx=0
+bidx=0
+for c in ax[1].containers:
+	ax[1].bar_label(c, labels=memX[bidx:bidx+len(c.datavalues)], fmt='%gs', color='red', size='large', rotation='vertical', fontweight='bold')
+	bidx += len(c.datavalues)
+
+left,right = ax[1].get_ylim()
+ax[1].set_ylim(left-left*0.8, right+right*1)
+ax[1].margins(x=0.01)
+ax[1].grid(linestyle='--', linewidth=0.2) 
+ax[1].grid(axis='x', linestyle='--', linewidth=2) 
+
+ax[1].set_xticks([4,8,12,16])
+ax[1].tick_params(axis="x", which="both", pad=10, direction="in", left=True, labelleft=True) 
+ax[1].tick_params(axis="y", which="both", pad=10, direction="in", rotation=0, top=True) 
+ax[1].set_xticklabels([])
+
+plt.subplots_adjust(top=0.99, bottom=0.01, left=0.005, right=0.995, hspace=0.05, wspace=0.2)
+fig.savefig("overlapping_eq_perf_mem.pdf")
+
+plt.show()

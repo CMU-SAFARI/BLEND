@@ -12,7 +12,17 @@ REF="../data/e.coli-pb-sequelii/ref.fa"
 PRESET="map-pb"
 
 mkdir -p ${OUTDIR}
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#e.coli-pb-rs
+OUTDIR="./e.coli-pb-rs/read_mapping/"
+PREFIX="SRR1509640_subreads"
+READS="../data/e.coli-pb-rs/SRR1509640_subreads.fastq"
+REF="../data/e.coli-pb-rs/ref.fa"
+PRESET="map-pb-clr"
+
+mkdir -p ${OUTDIR}
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/read_mapping/"
@@ -22,7 +32,7 @@ REF="../data/yeast-pb-pbsim2/ref.fa"
 PRESET="map-pb-clr"
 
 mkdir -p ${OUTDIR}
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-ont-pbsim-100x
 OUTDIR="./yeast-ont-pbsim-100x/read_mapping/"
@@ -32,7 +42,7 @@ REF="../data/yeast-ont-pbsim2/ref.fa"
 PRESET="map-ont"
 
 mkdir -p ${OUTDIR}
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #d.ananassae-pb-sequelii
 OUTDIR="./d.ananassae-pb-sequelii/read_mapping/"
@@ -42,7 +52,7 @@ REF="../data/d.ananassae-pb-sequelii/ref.fa"
 PRESET="map-pb"
 
 mkdir -p ${OUTDIR}
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #chm13-pb-sequelii-16X
 OUTDIR="./chm13-pb-sequelii-16X/read_mapping/"
@@ -52,5 +62,26 @@ REF="../data/chm13-pb-sequelii-16X/ref.fa"
 PRESET="map-pb"
 
 mkdir -p ${OUTDIR}
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#chm13-ont-pbsim2
+OUTDIR="./chm13-ont-pbsim2/read_mapping/"
+PREFIX="pbsim_chm13_30x"
+READS="../data/chm13-ont-pbsim2/pbsim_chm13_30x.fasta"
+REF="../data/chm13-ont-pbsim2/ref.fa"
+PRESET="map-ont"
+
+mkdir -p ${OUTDIR}
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#hg002-pb-ccs-52X
+OUTDIR="./hg002-pb-ccs-52X/read_mapping/"
+PREFIX="SRR10382244-9"
+READS="../data/hg002-pb-ccs-52X/SRR10382244-9.fastq"
+REF="../data/hg002-pb-ccs-52X/ref.fa"
+PRESET="map-pb"
+
+mkdir -p ${OUTDIR}
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/winnowmap-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} ${THREAD_SORT} ${PRESET} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_winnowmap.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_winnowmap.vcf.gz
 

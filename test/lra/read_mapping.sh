@@ -14,6 +14,16 @@ PRESET="CCS"
 mkdir -p ${OUTDIR}
 bash ../scripts/lra-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
+#e.coli-pb-rs
+OUTDIR="./e.coli-pb-rs/read_mapping/"
+PREFIX="SRR1509640_subreads"
+READS="../data/e.coli-pb-rs/SRR1509640_subreads.fastq"
+REF="../data/e.coli-pb-rs/ref.fa"
+PRESET="CLR"
+
+mkdir -p ${OUTDIR}
+bash ../scripts/lra-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/read_mapping/"
 PREFIX="pbsim_yeast_200x"
@@ -53,4 +63,27 @@ PRESET="CCS"
 
 mkdir -p ${OUTDIR}
 bash ../scripts/lra-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#chm13-ont-pbsim2
+OUTDIR="./chm13-ont-pbsim2/read_mapping/"
+READS="../data/chm13-ont-pbsim2/pbsim_chm13_30x.fasta"
+REF="../data/chm13-ont-pbsim2/ref.fa"
+PRESET="ONT"
+
+mkdir -p ${OUTDIR}
+
+PREFIX="pbsim_chm13_30x"
+bash ../scripts/lra-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#hg002-pb-ccs-52X
+OUTDIR="./hg002-pb-ccs-52X/read_mapping/"
+READS="../data/hg002-pb-ccs-52X/SRR10382244-9.fastq"
+REF="../data/hg002-pb-ccs-52X/ref.fa"
+PRESET="CCS"
+
+mkdir -p ${OUTDIR}
+
+PREFIX="SRR10382244-9"
+bash ../scripts/lra-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_lra.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_lra.vcf.gz
 

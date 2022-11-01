@@ -1,1 +1,0 @@
-../../../scripts/evaluate-overlaps.sh

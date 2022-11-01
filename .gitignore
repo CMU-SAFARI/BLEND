@@ -46,6 +46,7 @@ test/lra/*/
 test/mhap/*/
 test/minimap2/*/
 test/winnowmap/*/
+test/strobealign/*/
 
 test/comparisons/*/read_mapping/*mosdepth*
 test/comparisons/*/read_mapping/*per-base*
@@ -55,6 +56,8 @@ test/comparisons/*/read_mapping/*.bam*.bed
 test/comparisons/*/read_mapping/*.stats
 test/comparisons/*/read_mapping/*.mapeval
 test/comparisons/*/read_mapping/*.csv
+test/comparisons/*/read_mapping/*.npz
+test/comparisons/*/read_mapping/*.tab
 test/comparisons/*/read_mapping/figures/
 
 test/comparisons/*/overlap/quast/
@@ -64,7 +67,15 @@ test/comparisons/*/overlap/*.stats
 test/comparisons/*/overlap/*.ov-eval
 test/comparisons/*/overlap/figures/
 
+test/comparisons/*/sv_calling/blendi/
+test/comparisons/*/sv_calling/blend/
+test/comparisons/*/sv_calling/lra/
+test/comparisons/*/sv_calling/minimap2/
+test/comparisons/*/sv_calling/winnowmap/
+test/comparisons/*/sv_calling/*.err
+test/comparisons/*/sv_calling/*.out
+
 test/figures/*/*/*.pdf
+test/figures/*/*.pdf
 test/mhap/*.out
 test/mhap/*.err
-

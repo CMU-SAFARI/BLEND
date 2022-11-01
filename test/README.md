@@ -10,6 +10,7 @@ We list the links to download and compile each tool for comparison below:
 * [MHAP (v2.1.3 -- via conda)](https://anaconda.org/bioconda/mhap/2.1.3/download/noarch/mhap-2.1.3-hdfd78af_1.tar.bz2)
 * [LRA (v1.3.2 -- via conda)](https://anaconda.org/bioconda/lra/1.3.2/download/linux-64/lra-1.3.2-ha140323_0.tar.bz2)
 * [Winnowmap (v2.03 -- via conda)](https://anaconda.org/bioconda/winnowmap/2.03/download/linux-64/winnowmap-2.03-h2e03b76_0.tar.bz2)
+* [Strobealign (v0.7.1 -- via conda)](https://anaconda.org/bioconda/strobealign/0.7.1/download/linux-64/strobealign-0.7.1-hd03093a_1.tar.bz2)
 * [S-conLSH (v2.0)](https://github.com/anganachakraborty/S-conLSH-2.0/tree/292fbe0405f10b3ab63fc3a86cba2807597b582e)
 
 We use various tools to process and analyze the data we generate using each tool. The following tools must also be installed in your machine:
@@ -22,7 +23,10 @@ We use various tools to process and analyze the data we generate using each tool
 * [bedtools v2.30.0](https://github.com/arq5x/bedtools2/releases/tag/v2.30.0)
 * [mosdepth v0.3.2](https://github.com/brentp/mosdepth/releases/tag/v0.3.2)
 * [QUAST v5.0.2](https://github.com/ablab/quast/releases/tag/quast_5.0.2)
+* [deepTools v3.5.1](https://anaconda.org/bioconda/deeptools/3.5.1/download/noarch/deeptools-3.5.1-py_0.tar.bz2)
 * [PBSIM2 v2.0.1 -- via conda](https://anaconda.org/bioconda/pbsim2/2.0.1/download/linux-64/pbsim2-2.0.1-h9f5acd7_1.tar.bz2)
+* [Sniffles v2.0.7 -- via conda](https://anaconda.org/bioconda/sniffles/2.0.7/download/noarch/sniffles-2.0.7-pyhdfd78af_0.tar.bz2)
+* [Truvari v3.5.0 -- via conda](https://anaconda.org/bioconda/truvari/3.5.0/download/noarch/truvari-3.5.0-pyhdfd78af_0.tar.bz2)
 
 We suggest using conda to install these tools with their specified versions as almost all of them are included in the conda repository.
 
@@ -30,17 +34,20 @@ Please make sure that all of these tools are in your `PATH`
 
 ## Datasets
 
-All the datasets (except the human genome dataset) can be downloaded via Zenodo. For the human genome dataset, we use its already available repositories to download. We provide the scripts to download all these files under [data directory](./data/). In order to download:
+All the datasets (except the real human genome datasets) can be downloaded via Zenodo. For the human genome datasets, we use its already available repositories to download. We provide the scripts to download all these files under [data directory](./data/). In order to download:
 
 ```bash
 cd data
 
 bash download-e.coli-pb-sequelii.sh #E. coli PacBio HiFi Dataset (100X)
+bash download-e.coli-pb-rs.sh #E. coli PacBio CLR Dataset (112X)
+bash download-yeast-pb-pbsim2.sh #Simulated Yeast PacBio CLR Simulated Dataset (200X)
+bash download-yeast-ont-pbsim2.sh #Simulated Yeast ONT Simulated Dataset (100X)
+bash download-yeast-illumina.sh #Yeast Illumina Dataset (80X)
 bash download-d.ananassae-pb-sequelii.sh #D. ananassae PacBio HiFi Dataset (50X)
 bash download-chm13-pb-sequelii-16X.sh #Human CHM13 PacBio HiFi Dataset (16X)
-bash download-yeast-pb-pbsim2.sh #Yeast PacBio CLR Simulated Dataset (200X)
-bash download-yeast-ont-pbsim2.sh #Yeast ONT Simulated Dataset (100X)
-bash download-yeast-illumina.sh #Yeast Illumina Dataset (80X)
+bash download-chm13-ont-pbsim2.sh #Simulated Human CHM13 ONT R9.5 Dataset (30X)
+bash download-hg002-pb-sequelii-52X.sh #Human HG002 Dataset (52X)
 
 cd .. #going back to the test directory
 ```
@@ -49,7 +56,7 @@ Now that you have downloaded all the datasets, we can start running all the tool
 
 ## Finding Overlapping Reads
 
-We run each tool for finding overlapping reads for each dataset. We use 32 threads for each tool but you can easily change this number in the scripts we use below.
+We run each tool for finding overlapping reads for each dataset. We use 32 threads for each tool but you can easily change this number in the scripts we use below. We also provide the scripts to run the tools with [SLURM](https://slurm.schedmd.com/documentation.html). Please modify the `SLURM_OPTIONS` variable inside these scripts according to your system configuration. If you want to run the tools via SLURM, please use the corresponding scripts with the `_slurm.sh` prefix instead of the scripts we mention below.
 
 ### BLEND
 
@@ -58,6 +65,10 @@ Here we run BLEND to find overlapping reads for each dataset.
 ```bash
 cd blend
 bash overlap.sh
+
+#The following applies to all the scripts we mention below for running the tools:
+#If you want to run this script via SLURM, please edit SLURM_OPTIONS in overlap_slurm.sh and run the following command.
+#bash overlap_slurm.sh
 cd ..
 ```
 
@@ -92,6 +103,10 @@ Here we run BLEND to perform read mapping for each dataset.
 ```bash
 cd blend
 bash read_mapping.sh
+
+#The following applies to all the scripts we mention below for running the tools:
+#If you want to run this script via SLURM, please edit SLURM_OPTIONS in read_mapping_slurm.sh and run the following command.
+#bash read_mapping_slurm.sh
 cd ..
 ```
 
@@ -135,6 +150,16 @@ bash read_mapping.sh
 cd ..
 ```
 
+### Strobealign
+
+Here we run Strobealign to perform read mapping for each dataset.
+
+```bash
+cd strobealign
+bash read_mapping.sh
+cd ..
+```
+
 ## Comparing the Results
 
 We have already created symbolic links for all the files that each tool would generate under the [comparisons](./comparisons/) directory. The subdirectories under `comparisons` are created for each dataset.
@@ -147,7 +172,7 @@ Below we explain how to evaluate the results we generate for 1) finding overlapp
 
 ### Finding Overlapping Reads
 
-Each of the subdirectories under [comparisons](./comparisons/) include a directory called `overlap` where we include all the files to compare for a certain dataset. We explain how to evaluate the finding overlapping results for each dataset below.
+Each of the subdirectories under [comparisons](./comparisons/) include a directory called `overlap` where we include all the files to compare for a certain dataset. Each overlap directory includes the `1_generate_results.sh` and `summarize.sh` scripts. Running `1_generate_results.sh` generates and outputs all the corresponding evaluation results. If you want to see the results without re-running `1_generate_results.sh`, you can run `summarize.sh` to output the results. We explain how to evaluate the finding overlapping results for each dataset below.
 
 * E. coli PacBio HiFi Dataset (100X)
 
@@ -155,10 +180,52 @@ Each of the subdirectories under [comparisons](./comparisons/) include a directo
 cd comparisons/e.coli-pb-sequelii/overlap
 
 #Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-overlaps.sh .
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* E. coli PacBio CLR Dataset (112X)
+
+```bash
+cd comparisons/e.coli-pb-rs/overlap
+
+#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* Simulated Yeast PacBio CLR Simulated Dataset (200X)
+
+```bash
+cd comparisons/yeast-pb-pbsim-200x/overlap
+
+#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* Simulated Yeast ONT Simulated Dataset (100X)
+
+```bash
+cd comparisons/yeast-ont-pbsim-100x/overlap
+
+#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
@@ -169,10 +236,10 @@ cd ../../../
 cd comparisons/d.ananassae-pb-sequelii/overlap
 
 #Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-overlaps-large_genome.sh  .
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
@@ -183,121 +250,92 @@ cd ../../../
 cd comparisons/chm13-pb-sequelii-16X/overlap
 
 #Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-overlaps-large_genome.sh  .
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
-
-cd ../../../
-```
-
-* Yeast PacBio CLR Simulated Dataset (200X)
-
-```bash
-cd comparisons/yeast-pb-pbsim-200x/overlap
-
-#Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-overlaps-clr.sh .
-
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
 
-* Yeast ONT Simulated Dataset (100X)
+* Simulated Human CHM13 ONT R9.5 Dataset (30X)
 
 ```bash
-cd comparisons/yeast-ont-pbsim-100x/overlap
+cd comparisons/chm13-ont-pbsim2/overlap
 
 #Runs dnadiff and quast to generate all the results regarding the assembly and overlap statistics. It outputs the result at the end to the standard output.
-bash evaluate-overlaps-clr.sh .
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
 
 ### Read Mapping
 
-Each of the subdirectories under [comparisons](./comparisons/) include a directory called `read_mapping` where we include all the files to compare for a certain dataset. We explain how to evaluate the read mapping results for each dataset below.
+Each of the subdirectories under [comparisons](./comparisons/) include a directory called `read_mapping` where we include all the files to compare for a certain dataset. Each `read_mapping` directory includes the `1_generate_results.sh` and `summarize.sh` scripts. Running `1_generate_results.sh` generates and outputs all the corresponding evaluation results. If you want to see the results without re-running `1_generate_results.sh`, you can run `summarize.sh` to output the results. We explain how to evaluate the finding overlapping results for each dataset below. We explain how to evaluate the read mapping results for each dataset below.
 
 * E. coli PacBio HiFi Dataset (100X)
 
 ```bash
 cd comparisons/e.coli-pb-sequelii/read_mapping
 
-#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
-bash evaluate-read_mapping.sh
-bash summarize-evaluate-read_mapping.sh
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
 
-* D. ananassae PacBio HiFi Dataset (50X)
+* E. coli PacBio CLR Dataset (112X)
 
 ```bash
-cd comparisons/d.ananassae-pb-sequelii/read_mapping
+cd comparisons/e.coli-pb-rs/read_mapping
 
-#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
-bash evaluate-read_mapping.sh
-bash summarize-evaluate-read_mapping.sh
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
-
-cd ../../../
-```
-
-* Human CHM13 PacBio HiFi Dataset (16X)
-
-```bash
-cd comparisons/chm13-pb-sequelii-16X/read_mapping
-
-#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
-bash evaluate-read_mapping.sh
-bash summarize-evaluate-read_mapping.sh
-
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
 
-* Yeast PacBio CLR Simulated Dataset (200X)
+* Simulated Yeast PacBio CLR Simulated Dataset (200X)
 
 ```bash
 cd comparisons/yeast-pb-pbsim-200x/read_mapping
 
 #This script has multiple phases:
-#1) #Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
+#1) Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
 #2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
 #number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
-bash generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
 
-* Yeast ONT Simulated Dataset (100X)
+* Simulated Yeast ONT Simulated Dataset (100X)
 
 ```bash
 cd comparisons/yeast-ont-pbsim-100x/read_mapping
 
 #This script has multiple phases:
-#1) #Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
+#1) Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
 #2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
 #number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
-bash generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
@@ -307,15 +345,94 @@ cd ../../../
 ```bash
 cd comparisons/yeast-illumina/read_mapping
 
-#Runs BamUtil, bedtools, samtools, and mosdepth to generate the statistics based on the bam files
-bash evaluate-read_mapping.sh
-bash summarize-evaluate-read_mapping.sh
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
 
-#Time results (User time+System Time for time and Maximum resident set size (kbytes) for the peak memory):
-for i in `echo *.time`; do echo $i; grep "User" $i; grep "System" $i; grep "Maximum" $i; done
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
 
 cd ../../../
 ```
+
+* D. ananassae PacBio HiFi Dataset (50X)
+
+```bash
+cd comparisons/d.ananassae-pb-sequelii/read_mapping
+
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* Human CHM13 PacBio HiFi Dataset (16X)
+
+```bash
+cd comparisons/chm13-pb-sequelii-16X/read_mapping
+
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* Simulated Human CHM13 ONT R9.5 Dataset (30X)
+
+```bash
+cd comparisons/chm13-ont-pbsim2/read_mapping
+
+#This script has multiple phases:
+#1) Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+#2) Generates the data used for evaluating the read mapping accuracy. Precision results are calculated based on the
+#number of reads that map to the chromosome in the 1) resulting BAM/SAM files and 2) in the ground truth
+
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+* Human HG002 Dataset (52X)
+
+```bash
+cd comparisons/hg002-pb-ccs-52X/read_mapping
+
+#Runs BamUtil, bedtools, samtools, deepTools, and mosdepth to generate the statistics based on the bam files
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+cd ../../../
+```
+
+### Structural Variant Calling
+
+We use sniffles to call structural variants (SVs) from the BAM files that each tool generates from the read mapping step. We use the Human HG002 dataset and compare the SVs to the HG002 Tier 1 SV Truth Set released by GIAB. We explain how to evaluate the SV results.
+
+* Human HG002 Dataset (52X)
+
+```bash
+cd comparisons/hg002-pb-ccs-52X/sv_calling
+
+#Runs truvari to compare the truth SV sets to the VCFs generated from the BAM files of each tool
+bash 1_generate_results.sh
+
+#If you want to output the results after successful completion of 1_generate_results.sh, you can run the following command
+bash summarize.sh
+
+
+cd ../../../
+```
+
 
 ## Figures
 

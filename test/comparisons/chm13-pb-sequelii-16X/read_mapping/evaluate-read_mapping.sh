@@ -1,1 +1,0 @@
-../../../scripts/evaluate-read_mapping.sh

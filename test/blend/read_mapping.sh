@@ -8,90 +8,145 @@ TOT_THREAD=40
 OUTDIR="./e.coli-pb-sequelii/read_mapping/"
 READS="../data/e.coli-pb-sequelii/Ecoli.PB.HiFi.100X.fastq"
 REF="../data/e.coli-pb-sequelii/ref.fa"
-PRESETX="map-hifi"
+PRESET="map-hifi"
 
 mkdir -p ${OUTDIR}
 
-PREFIX="Ecoli.PB.HiFi.100X_strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
-
+#The following is the run using default parameters:
 PREFIX="Ecoli.PB.HiFi.100X"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+PREFIX="Ecoli.PB.HiFi.100X_blendi"
 PARAMS="--immediate"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#e.coli-pb-rs
+OUTDIR="./e.coli-pb-rs/read_mapping/"
+READS="../data/e.coli-pb-rs/SRR1509640_subreads.fastq"
+REF="../data/e.coli-pb-rs/ref.fa"
+PRESET="map-pb"
+
+mkdir -p ${OUTDIR}
+
+#The following is the run using default parameters:
+PREFIX="SRR1509640_subreads"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+PREFIX="SRR1509640_subreads_blends"
+PARAMS="--strobemers"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/read_mapping/"
 READS="../data/yeast-pb-pbsim2/pbsim_yeast_200x.fasta"
 REF="../data/yeast-pb-pbsim2/ref.fa"
-PRESETX="map-pb"
+PRESET="map-pb"
 
 mkdir -p ${OUTDIR}
 
+#The following is the run using default parameters:
 PREFIX="pbsim_yeast_200x"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
-PREFIX="pbsim_yeast_200x_strobemers"
+PREFIX="pbsim_yeast_200x_blends"
 PARAMS="--strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-ont-pbsim-100x
 OUTDIR="./yeast-ont-pbsim-100x/read_mapping/"
 READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fasta"
 REF="../data/yeast-ont-pbsim2/ref.fa"
-PRESETX="map-ont"
+PRESET="map-ont"
 
 mkdir -p ${OUTDIR}
 
+#The following is the run using default parameters:
 PREFIX="pbsim_yeast_100x"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
-PREFIX="pbsim_yeast_100x_strobemers"
+PREFIX="pbsim_yeast_100x_blends"
 PARAMS="--strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #yeast-illumina
 OUTDIR="./yeast-illumina/read_mapping/"
 READS1="../data/yeast-illumina/ERR1938683_1.fastq"
 READS2="../data/yeast-illumina/ERR1938683_2.fastq"
 REF="../data/yeast-illumina/ref.fa"
-PRESETX="sr"
+PRESET="sr"
 
 mkdir -p ${OUTDIR}
 
+#The following is the run using default parameters:
 PREFIX="ERR1938683"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map_short.sh ${OUTDIR} ${PREFIX} ${READS1} ${READS2} ${REF} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map_short.sh ${OUTDIR} ${PREFIX} ${READS1} ${READS2} ${REF} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
-PREFIX="ERR1938683_strobemers"
+PREFIX="ERR1938683_blends"
 PARAMS="--strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map_short.sh ${OUTDIR} ${PREFIX} ${READS1} ${READS2} ${REF} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map_short.sh ${OUTDIR} ${PREFIX} ${READS1} ${READS2} ${REF} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #d.ananassae-pb-sequelii
 OUTDIR="./d.ananassae-pb-sequelii/read_mapping/"
 READS="../data/d.ananassae-pb-sequelii/Dana.PB.HiFi.50X.fastq"
 REF="../data/d.ananassae-pb-sequelii/ref.fa"
-PRESETX="map-hifi"
+PRESET="map-hifi"
 
 mkdir -p ${OUTDIR}
 
-PREFIX="Dana.PB.HiFi.50X_strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
-
+#The following is the run using default parameters:
 PREFIX="Dana.PB.HiFi.50X"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+PREFIX="Dana.PB.HiFi.50X_blendi"
 PARAMS="--immediate"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
 #chm13-pb-sequelii-16X
 OUTDIR="./chm13-pb-sequelii-16X/read_mapping/"
 READS="../data/chm13-pb-sequelii-16X/SRR11292122-3_subreads.fastq"
 REF="../data/chm13-pb-sequelii-16X/ref.fa"
-PRESETX="map-hifi"
+PRESET="map-hifi"
 
 mkdir -p ${OUTDIR}
 
-PREFIX="SRR11292122-3_subreads_strobemers"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
-
+#The following is the run using default parameters:
 PREFIX="SRR11292122-3_subreads"
-PARAMS="--immediate"
-/usr/bin/time -v -p -o ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESETX} ${THREAD} ${THREAD_SORT} ${PARAMS} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
+PREFIX="SRR11292122-3_subreads_blendi"
+PARAMS="--immediate"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#chm13-ont-pbsim2
+OUTDIR="./chm13-ont-pbsim2/read_mapping/"
+READS="../data/chm13-ont-pbsim2/pbsim_chm13_30x.fasta"
+REF="../data/chm13-ont-pbsim2/ref.fa"
+PRESET="map-ont"
+
+mkdir -p ${OUTDIR}
+
+#The following is the run using default parameters:
+PREFIX="pbsim_chm13_30x"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+PREFIX="pbsim_chm13_30x_blends"
+PARAMS="--strobemers"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#hg002-pb-ccs-52X
+OUTDIR="./hg002-pb-ccs-52X/read_mapping/"
+READS="../data/hg002-pb-ccs-52X/SRR10382244-9.fastq"
+REF="../data/hg002-pb-ccs-52X/ref.fa"
+PRESET="map-hifi"
+
+mkdir -p ${OUTDIR}
+
+#The following is the run using default parameters:
+PREFIX="SRR10382244-9"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_blend.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_blend.vcf.gz
+
+PREFIX="SRR10382244-9_blendi"
+PARAMS="--immediate"
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/blend-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} "${PARAMS}" > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+/usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_blend.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_blend.vcf.gz

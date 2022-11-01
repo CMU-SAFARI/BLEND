@@ -174,15 +174,18 @@ void mm_sketch_blend(void *km,
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56)); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
     
     const int blndK = (blend_bits>0)?blend_bits:2*k;
-    const uint64_t shift1 = 2*(k-1), mask = (1ULL<<2*k)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1;
+	const int bk = (n_neighbors+k < 30)?n_neighbors+k-1:28;
+    const uint64_t shift1 = 2*(k-1), bshift1 = 2*(bk-1), mask = (1ULL<<2*k)-1, bkmask = (1ULL<<2*bk)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1;
     uint64_t kmer[2] = {0,0}, hkmer[2] = {0,0};
+	uint64_t bkmer[2] = {0,0};
     int i, j, l, buf_pos, min_pos, kmer_span = 0, tot_span;
     mm128_t buf[w];
     mm128_t min = { UINT64_MAX, UINT64_MAX };
     tiny_queue_t tq;
     
     //BLEND Variables
-    uint64_t blendVal = 0, r_blendVal = 0;
+    //0 is forward, 1 is reverse
+    uint64_t blendVal[2]; blendVal[0] = 0; blendVal[1] = 0;
     b176_t blndBuf[n_neighbors];
     int f_blendpos = 0;
     
@@ -194,7 +197,6 @@ void mm_sketch_blend(void *km,
     __m256i r_blndcnt_lsb = _mm256_set1_epi8(0);
     __m256i r_blndcnt_msb = _mm256_set1_epi8(0);
 
-    
     memset(buf, 0xff, w*16);
     memset(blndBuf, 0, n_neighbors*22); //176/8
     memset(&tq, 0, sizeof(tiny_queue_t));
@@ -219,7 +221,15 @@ void mm_sketch_blend(void *km,
             } else kmer_span = l + 1 < k? l + 1 : k;
             
             kmer[0] = ((kmer[0] << 2 | c) & mask); // forward k-mer
-            kmer[1] = ((kmer[1] >> 2) | (3ULL^c) << shift1); //reverse k-mer k-mer
+            kmer[1] = ((kmer[1] >> 2) | (3ULL^c) << shift1); //reverse k-mer
+			bkmer[0] = ((bkmer[0] << 2 | c) & bkmask); // forward k-mer
+            bkmer[1] = ((bkmer[1] >> 2) | (3ULL^c) << bshift1); //reverse k-mer
+            //we check this on the smaller k-mer (i.e., item of the set in SimHash) because
+            //actual set size may not fit 64/128/256 bit limits when using large neighbors.
+            //This check is biased because a set may not be symetric but we may consider it symetric
+            //due to its last k-mer being symetric. Try to @FIX this @TODO
+            if (bkmer[0] == bkmer[1]) continue; // skip "symmetric k-mers" as we don't know it strand
+            z = bkmer[0] < bkmer[1]? 0 : 1; // strand
 
             ++l;
             if (l >= k && kmer_span < 256){
@@ -236,24 +246,20 @@ void mm_sketch_blend(void *km,
 
                 if(l >= n_neighbors+k-1){
 
-                    blendVal = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], 
+                    blendVal[0] = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], 
                                                   blndBuf[f_blendpos].x, mask32, blndK);
-                    r_blendVal = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1],
+                    blendVal[1] = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1],
                                                     blndBuf[f_blendpos].y, mask32, blndK);
 
-                    if(blendVal == r_blendVal) continue; // skip "symmetric blends" as we don't know its strand
+                    // if (blendVal[0] == blendVal[1]) continue; // skip "symmetric k-mers" as we don't know it strand
+                    // z = blendVal[0] < blendVal[1]? 0 : 1; // strand
 
                     //@IMPORTANT: here we use tot_span but we could use only kmer_span too
                     //it would be more precise but would lead to large gaps between seeds.
                     tot_span = i - blndBuf[f_blendpos].i + (uint32_t)blndBuf[f_blendpos].k;
                     
-                    if(blendVal < r_blendVal){
-                        info.x = blendVal << 14 | tot_span;
-                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 0;
-                    }else{
-                        info.x = r_blendVal << 14 | tot_span;
-                        info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | 1;
-                    }
+                    info.x = blendVal[z] << 14 | tot_span;
+                    info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
                 }else{
                     calc_blend_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], mask32, blndK);
                     calc_blend_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1], mask32, blndK);
@@ -381,8 +387,7 @@ void mm_sketch_sb_blend(void *km,
 
             ++l;
             if (l >= k && kmer_span < 256){
-                hkmer = hash64(kmer[z], blndMask);
-                f_info.x = hkmer << 14 | kmer_span;
+                f_info.x = hash64(kmer[z], blndMask) << 14 | kmer_span;
                 f_info.y = (uint64_t)rid<<32 | (uint32_t)i<<1 | z;
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0;

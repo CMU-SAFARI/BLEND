@@ -11,10 +11,19 @@ REF="../data/e.coli-pb-sequelii/ref.fa"
 mkdir -p ${OUTDIR}
 bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
+#e.coli-pb-rs
+OUTDIR="./e.coli-pb-rs/read_mapping/"
+PREFIX="SRR1509640_subreads"
+READS="../data/e.coli-pb-rs/SRR1509640_subreads.fastq"
+REF="../data/e.coli-pb-rs/ref.fa"
+
+mkdir -p ${OUTDIR}
+bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
 #yeast-pb-pbsim-200x
 OUTDIR="./yeast-pb-pbsim-200x/read_mapping/"
 PREFIX="pbsim_yeast_200x"
-READS="../data/yeast-pb-pbsim2/pbsim_yeast_200x.fasta"
+READS="../data/yeast-pb-pbsim2/pbsim_yeast_200x.fastq"
 REF="../data/yeast-pb-pbsim2/ref.fa"
 
 mkdir -p ${OUTDIR}
@@ -23,7 +32,7 @@ bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${
 #yeast-ont-pbsim-100x
 OUTDIR="./yeast-ont-pbsim-100x/read_mapping/"
 PREFIX="pbsim_yeast_100x"
-READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fasta"
+READS="../data/yeast-ont-pbsim2/pbsim_yeast_100x.fastq"
 REF="../data/yeast-ont-pbsim2/ref.fa"
 
 mkdir -p ${OUTDIR}
@@ -47,3 +56,33 @@ REF="../data/chm13-pb-sequelii-16X/ref.fa"
 mkdir -p ${OUTDIR}
 bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
 
+#chm13-ont-pbsim2
+OUTDIR="./chm13-ont-pbsim2/read_mapping/"
+READS="../data/chm13-ont-pbsim2/pbsim_chm13_30x.fastq"
+REF="../data/chm13-ont-pbsim2/ref.fa"
+
+mkdir -p ${OUTDIR}
+
+PREFIX="pbsim_chm13_30x"
+bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#We exclude the following run as S-conLSH cannot generate sortable & indexable BAM files
+#hg002-pb-ccs-52X
+# OUTDIR="./hg002-pb-ccs-52X/read_mapping/"
+# READS="../data/hg002-pb-ccs-52X/SRR10382244-9.fastq"
+# REF="../data/hg002-pb-ccs-52X/ref.fa"
+
+# mkdir -p ${OUTDIR}
+
+# #S-conLSH won't run the following code because we cannot generate a sorted BAM file. We run the following code:
+
+# #cat e.coli-pb-sequelii/read_mapping/Ecoli.PB.HiFi.100X_conlsh.sam | samtools sort -l5 -m4G -@ 32 -o e.coli-pb-sequelii/read_mapping/Ecoli.PB.HiFi.100X_conlsh.bam
+
+# #We get the following error:
+# # [E::sam_parse1] CIGAR and query sequence are of different length
+# # samtools sort: truncated file. Aborting
+# # [E::sam_parse1] CIGAR and query sequence are of different length
+
+# PREFIX="SRR10382244-9"
+# bash ../scripts/conlsh-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+# /usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_conlsh.bam --threads ${THREAD} -v ${OUTDIR}/${PREFIX}_conlsh.vcf.gz

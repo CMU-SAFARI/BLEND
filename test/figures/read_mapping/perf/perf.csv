@@ -1,27 +1,42 @@
-Data,Tool,CPU Time,Peak Memory (GB)
-Human (HiFi),BLEND,19118.58,15.703424
-Human (HiFi),Minimap2,38314.88,18.719224
-Human (HiFi),LRA,82961.37,18.838364
-Human (HiFi),Winnowmap,369691.65,33.660208
-Human (HiFi),S-conLSH,1110817.75,87.608440
-D. ananassae (HiFi),BLEND,7113.51,16.801416
-D. ananassae (HiFi),Minimap2,26235.93,20.789004
-D. ananassae (HiFi),LRA,188827.13,11.134736
-D. ananassae (HiFi),Winnowmap,53638.28,18.712200
-E. coli (HiFi),BLEND,130.62,2.533120
-E. coli (HiFi),Minimap2,173.41,1.385636
-E. coli (HiFi),LRA,227.49,2.220888
-E. coli (HiFi),Winnowmap,607.49,2.226940
-E. coli (HiFi),S-conLSH,1885.93,2.009712
-Yeast (PacBio CLR),BLEND,1152.53,7.169748
-Yeast (PacBio CLR),Minimap2,1189.22,5.265364
-Yeast (PacBio CLR),LRA,13537.31,5.129968
-Yeast (PacBio CLR),Winnowmap,2029.16,11.340288
-Yeast (PacBio CLR),S-conLSH,9098.31,5.055524
-Yeast (ONT),BLEND,716.09,6.078660
-Yeast (ONT),Minimap2,530.87,4.156224
-Yeast (ONT),LRA,3939.4,2.483952
-Yeast (ONT),Winnowmap,3134.01,16.331496
-Yeast (ONT),S-conLSH,4887.95,3.276504
-Yeast (Illumina),BLEND,344.42,0.824008
-Yeast (Illumina),Minimap2,391.97,0.883320
+Data,Tool,CPU Time,Peak Memory (GB),idx
+CHM13 (HiFi),BLEND,37546.93,33.66,1
+CHM13 (HiFi),minimap2,73967.56,33.65,2
+CHM13 (HiFi),LRA,83213.75,18.84,3
+CHM13 (HiFi),Winnowmap2,371108.54,33.66,4
+CHM13 (HiFi),S-conLSH,1120577.91,87.61,5
+HG002 (HiFi),BLEND,176248.29,33.68,7
+HG002 (HiFi),minimap2,379642.93,35.16,8
+HG002 (HiFi),LRA,406156.43,17.85,9
+HG002 (HiFi),Winnowmap2,955463.23,33.73,10
+D. ananassae (HiFi),BLEND,10235.42,18.56,12
+D. ananassae (HiFi),minimap2,42208.82,21.20,13
+D. ananassae (HiFi),LRA,190252.87,11.13,14
+D. ananassae (HiFi),Winnowmap2,54042.25,18.71,15
+E. coli (HiFi),BLEND,199.35,2.54,17
+E. coli (HiFi),minimap2,504.89,1.38,18
+E. coli (HiFi),LRA,233.04,2.22,19
+E. coli (HiFi),Winnowmap2,617.37,2.23,20
+E. coli (HiFi),S-conLSH,1906.44,2.01,21
+CHM13 (ONT),BLEND,263098.17,33.73,23
+CHM13 (ONT),minimap2,244606.43,33.75,24
+CHM13 (ONT),LRA,391295.36,13.87,25
+CHM13 (ONT),Winnowmap2,605762.94,41.06,26
+CHM13 (ONT),S-conLSH,5781248.29,142.73,27
+Yeast (PacBio),BLEND,1078.13,5.13,29
+Yeast (PacBio),minimap2,2980.60,5.24,30
+Yeast (PacBio),LRA,13706.96,5.13,31
+Yeast (PacBio),Winnowmap2,2118.00,11.34,32
+Yeast (PacBio),S-conLSH,9168.12,5.06,33
+Yeast (ONT),BLEND,590.20,3.97,35
+Yeast (ONT),minimap2,1143.31,4.12,36
+Yeast (ONT),LRA,3990.66,2.48,37
+Yeast (ONT),Winnowmap2,3246.13,16.33,38
+Yeast (ONT),S-conLSH,4921.80,3.28,39
+Yeast (Illumina),BLEND,488.63,2.68,41
+Yeast (Illumina),minimap2,536.56,2.67,42
+Yeast (Illumina),Strobealign,237.57,3.94,43
+E. coli (PacBio),BLEND,649.41,12.87,45
+E. coli (PacBio),minimap2,551.57,13.50,46
+E. coli (PacBio),LRA,1366.15,3.65,47
+E. coli (PacBio),Winnowmap2,741.95,11.19,48
+E. coli (PacBio),S-conLSH,941.41,2.32,49

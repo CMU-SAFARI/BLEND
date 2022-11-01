@@ -1,19 +1,16 @@
-Data,Tool,CPU Time,Peak Memory (GB)
-Human (HiFi),BLEND-I,20658.7,13.225856
-Human (HiFi),Minimap2,38314.88,18.719224
-Human (HiFi),Minimap2-Eq,30471.38,10.765520
-D. ananassae (HiFi),BLEND-I,10677.47,18.341688
-D. ananassae (HiFi),Minimap2,26235.93,20.789004
-D. ananassae (HiFi),Minimap2-Eq,14061.55,17.634732
-E. coli (HiFi),BLEND-I,146.21,1.368460
-E. coli (HiFi),Minimap2,173.41,1.385636
-E. coli (HiFi),Minimap2-Eq,144.94,1.410636
-Yeast (PacBio CLR),BLEND-I,1152.53,7.169748
-Yeast (PacBio CLR),Minimap2,1189.22,5.265364
-Yeast (PacBio CLR),Minimap2-Eq,1271.29,7.050948
-Yeast (ONT),BLEND-I,716.09,6.078660
-Yeast (ONT),Minimap2,530.87,4.156224
-Yeast (ONT),Minimap2-Eq,603.61,6.285616
-Yeast (Illumina),BLEND-I,344.42,0.824008
-Yeast (Illumina),Minimap2,391.97,0.883320
-Yeast (Illumina),Minimap2-Eq,279.77,0.745892
+Data,Tool,CPU Time,Peak Memory (GB),idx
+CHM13 (HiFi),BLEND-I,47175.56,33.65,1
+CHM13 (HiFi),minimap2,73967.56,33.65,2
+CHM13 (HiFi),minimap2-Eq,58136.13,33.65,3
+HG002 (HiFi),BLEND-I,362762.16,33.70,5
+HG002 (HiFi),minimap2,379642.93,35.16,6
+HG002 (HiFi),minimap2-Eq,349695.66,34.69,7
+D. ananassae (HiFi),BLEND-I,18655.34,18.71,9
+D. ananassae (HiFi),minimap2,42208.82,21.20,10
+D. ananassae (HiFi),minimap2-Eq,20700.22,18.62,11
+E. coli (HiFi),BLEND-I,160.01,1.36,13
+E. coli (HiFi),minimap2,504.89,1.38,14
+E. coli (HiFi),minimap2-Eq,441.68,1.36,15
+Yeast (Illumina),BLEND-I,488.63,2.68,17
+Yeast (Illumina),minimap2,536.56,2.67,18
+Yeast (Illumina),minimap2-Eq,645.69,2.67,19

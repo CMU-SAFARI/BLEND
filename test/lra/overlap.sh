@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#We tried running LRA for read overlapping but it cannot generate 
+
 THREAD=32
 
 #e.coli-pb-sequelii
@@ -8,6 +10,16 @@ PREFIX="Ecoli.PB.HiFi.100X"
 READS="../data/e.coli-pb-sequelii/Ecoli.PB.HiFi.100X.fastq"
 READS2="../data/e.coli-pb-sequelii/Ecoli.PB.HiFi.100X.fasta"
 PRESET="CCS"
+
+mkdir -p ${OUTDIR}
+bash ../scripts/lra-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${READS2} ${PRESET} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
+
+#e.coli-pb-rs
+OUTDIR="./e.coli-pb-rs/overlap/"
+PREFIX="SRR1509640_subreads"
+READS="../data/e.coli-pb-rs/SRR1509640_subreads.fastq"
+READS2="../data/e.coli-pb-rs/SRR1509640_subreads.fasta"
+PRESET="CLR"
 
 mkdir -p ${OUTDIR}
 bash ../scripts/lra-overlap.sh ${OUTDIR} ${PREFIX} ${READS} ${READS2} ${PRESET} ${THREAD} > ${OUTDIR}/${PREFIX}.out 2> ${OUTDIR}/${PREFIX}.err
