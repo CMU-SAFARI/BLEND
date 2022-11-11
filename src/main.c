@@ -84,6 +84,8 @@ static ko_longopt_t long_options[] = {
     { "skewed",         ko_no_argument, 	  357 },
     { "strobemers",     ko_no_argument, 	  358 },
     { "immediate",      ko_no_argument, 	  359 },
+	{ "dbg-blend_hash", ko_no_argument, 	  360 },
+	{ "dbg-hash", 		ko_no_argument, 	  361 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -255,6 +257,8 @@ int main(int argc, char *argv[])
 		else if (c == 357) ipt.flag |= B_I_SKEWED; // --skewed
 		else if (c == 358) ipt.flag |= B_I_STROBEMERS; // --strobemers
 		else if (c == 359) ipt.flag &= 0x0f; // --immediate (disable strobemers)
+		else if (c == 360) mm_dbg_flag |= MM_DBG_PRINT_BLEND_HASH; //--dbg-blend_hash
+		else if (c == 361) mm_dbg_flag |= MM_DBG_PRINT_HASH; //--dbg-hash
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
@@ -438,7 +442,7 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 		}
-		if (mm_verbose >= 3)
+		if (mm_verbose >= 3 && (!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH)))
 			fprintf(stderr, "[M::%s::%.3f*%.2f] loaded/built the index for %d target sequence(s)\n",
 					__func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), mi->n_seq);
 		if (argc != o.ind + 1) mm_mapopt_update(&opt, mi);
@@ -475,7 +479,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if (mm_verbose >= 3) {
+	if (mm_verbose >= 3 && (!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH))) {
 		fprintf(stderr, "[M::%s] Version: %s\n", __func__, BLEND_VERSION);
 		fprintf(stderr, "[M::%s] CMD:", __func__);
 		for (i = 0; i < argc; ++i)

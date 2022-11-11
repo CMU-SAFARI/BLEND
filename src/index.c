@@ -114,7 +114,8 @@ void mm_idx_stat(const mm_idx_t *mi)
 	int n = 0, n1 = 0;
 	uint32_t i;
 	uint64_t sum = 0, len = 0;
-	fprintf(stderr, "[M::%s] kmer size: %d; skip: %d; is_hpc: %d; #seq: %d\n", __func__, mi->k, mi->w, mi->flag&MM_I_HPC, mi->n_seq);
+	if(!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH))
+		fprintf(stderr, "[M::%s] kmer size: %d; skip: %d; is_hpc: %d; #seq: %d\n", __func__, mi->k, mi->w, mi->flag&MM_I_HPC, mi->n_seq);
 	for (i = 0; i < mi->n_seq; ++i)
 		len += mi->seq[i].len;
 	for (i = 0; i < 1U<<mi->b; ++i)
@@ -130,7 +131,8 @@ void mm_idx_stat(const mm_idx_t *mi)
 				if (kh_key(h, k)&1) ++n1;
 			}
 	}
-	fprintf(stderr, "[M::%s::%.3f*%.2f] distinct minimizers: %d (%.2f%% are singletons); average occurrences: %.3lf; average spacing: %.3lf; total length: %ld\n",
+	if(!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH))
+		fprintf(stderr, "[M::%s::%.3f*%.2f] distinct minimizers: %d (%.2f%% are singletons); average occurrences: %.3lf; average spacing: %.3lf; total length: %ld\n",
 			__func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0), n, 100.0*n1/n, (double)sum / n, (double)len / sum, (long)len);
 }
 
@@ -418,11 +420,11 @@ mm_idx_t *mm_idx_gen(mm_bseq_file_t *fp, int w, int blend_bits, int k, int k_shi
 	pl.fp = fp;
 	pl.mi = mm_idx_init(w, blend_bits, k, k_shift, b, n_neighbors, flag);
 	kt_pipeline(n_threads < 3? n_threads : 3, worker_pipeline, &pl, 3);
-	if (mm_verbose >= 3)
+	if (mm_verbose >= 3 && (!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH)))
 		fprintf(stderr, "[M::%s::%.3f*%.2f] collected minimizers\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0));
 
 	mm_idx_post(pl.mi, n_threads);
-	if (mm_verbose >= 3)
+	if (mm_verbose >= 3 && (!(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) && !(mm_dbg_flag & MM_DBG_PRINT_HASH)))
 		fprintf(stderr, "[M::%s::%.3f*%.2f] sorted minimizers\n", __func__, realtime() - mm_realtime0, cputime() / (realtime() - mm_realtime0));
 
 	return pl.mi;

@@ -95,4 +95,4 @@ ax[1].set_xticklabels([])
 plt.subplots_adjust(top=0.99, bottom=0.01, left=0.005, right=0.995, hspace=0.05, wspace=0.2)
 fig.savefig("overlapping_blend_perf_mem.pdf")
 
-plt.show()
+# plt.show()

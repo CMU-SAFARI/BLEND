@@ -14,6 +14,8 @@
 #define MM_DBG_PRINT_SEED    0x4
 #define MM_DBG_PRINT_ALN_SEQ 0x8
 #define MM_DBG_PRINT_CHAIN   0x10
+#define MM_DBG_PRINT_BLEND_HASH   0x20
+#define MM_DBG_PRINT_HASH   0x40
 
 //@IMPORTANT: these flags started from 40 assuming 8 bit spanning. changed it to 32+14
 #define MM_SEED_LONG_JOIN  (1ULL<<46)

@@ -23,12 +23,12 @@ CHM13 (ONT),LRA,391295.36,13.87,25
 CHM13 (ONT),Winnowmap2,605762.94,41.06,26
 CHM13 (ONT),S-conLSH,5781248.29,142.73,27
 Yeast (PacBio),BLEND,1078.13,5.13,29
-Yeast (PacBio),minimap2,2980.60,5.24,30
+Yeast (PacBio),minimap2,1085.90,5.13,30
 Yeast (PacBio),LRA,13706.96,5.13,31
 Yeast (PacBio),Winnowmap2,2118.00,11.34,32
 Yeast (PacBio),S-conLSH,9168.12,5.06,33
 Yeast (ONT),BLEND,590.20,3.97,35
-Yeast (ONT),minimap2,1143.31,4.12,36
+Yeast (ONT),minimap2,634.38,4.09,36
 Yeast (ONT),LRA,3990.66,2.48,37
 Yeast (ONT),Winnowmap2,3246.13,16.33,38
 Yeast (ONT),S-conLSH,4921.80,3.28,39

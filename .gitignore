@@ -67,11 +67,7 @@ test/comparisons/*/overlap/*.stats
 test/comparisons/*/overlap/*.ov-eval
 test/comparisons/*/overlap/figures/
 
-test/comparisons/*/sv_calling/blendi/
-test/comparisons/*/sv_calling/blend/
-test/comparisons/*/sv_calling/lra/
-test/comparisons/*/sv_calling/minimap2/
-test/comparisons/*/sv_calling/winnowmap/
+test/comparisons/*/sv_calling/*/
 test/comparisons/*/sv_calling/*.err
 test/comparisons/*/sv_calling/*.out
 

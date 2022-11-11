@@ -1,0 +1,6 @@
+main k: 5 w: 10 fixed-bits: 32 neighbors: 21
+[DEBUG] Total minimizer: 1197957	Total Collision: 68082	Collision/Minimizer ratio: 0.056832	Average Collision Edit Distance: 9.617652
+[DEBUG] Number of collisions with a certain edit distance ([edit]: count):
+[0]: 0 [1]: 279 [2]: 22334 [3]: 34 [4]: 4058 [5]: 10 [6]: 1230 [7]: 24 [8]: 490 [9]: 237 [10]: 764 [11]: 1451 [12]: 2871 [13]: 5324 [14]: 7273 [15]: 8072 [16]: 6516 [17]: 4084 [18]: 2019 [19]: 720 [20]: 180 [21]: 81 [22]: 30 [23]: 1 [24]: 0 
+[DEBUG] Ratio of collisions with a certain edit distance ([edit]: count):
+[0]: 0.00 [1]: 0.00 [2]: 0.33 [3]: 0.00 [4]: 0.06 [5]: 0.00 [6]: 0.02 [7]: 0.00 [8]: 0.01 [9]: 0.00 [10]: 0.01 [11]: 0.02 [12]: 0.04 [13]: 0.08 [14]: 0.11 [15]: 0.12 [16]: 0.10 [17]: 0.06 [18]: 0.03 [19]: 0.01 [20]: 0.00 [21]: 0.00 [22]: 0.00 [23]: 0.00 [24]: 0.00 

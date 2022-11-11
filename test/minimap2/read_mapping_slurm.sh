@@ -124,4 +124,4 @@ sbatch -J mm2.${PREFIX} -o ${OUTDIR}/${PREFIX}.out -e ${OUTDIR}/${PREFIX}.err -c
 
 PREFIX="SRR10382244-9_eq"
 PARAMS="-k23 -w50"
-sbatch -J mm2.${PREFIX} -o ${OUTDIR}/${PREFIX}.out -e ${OUTDIR}/${PREFIX}.err -c ${TOT_THREAD} $SLURM_OPTIONS --wrap="/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/minimap2-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} ${PARAMS}; /usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_minimap2.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_minimap2.vcf.gz"
+sbatch -J mm2.${PREFIX} -o ${OUTDIR}/${PREFIX}.out -e ${OUTDIR}/${PREFIX}.err -c ${TOT_THREAD} $SLURM_OPTIONS --wrap="/usr/bin/time -vpo ${OUTDIR}/${PREFIX}.time bash ../scripts/minimap2-map.sh ${OUTDIR} ${PREFIX} ${READS} ${REF} ${PRESET} ${THREAD} ${THREAD_SORT} \"${PARAMS}\"; /usr/bin/time -vpo ${OUTDIR}/${PREFIX}_sniffles.time sniffles --allow-overwrite -i ${OUTDIR}/${PREFIX}_minimap2.bam --threads ${TOT_THREAD} -v ${OUTDIR}/${PREFIX}_minimap2.vcf.gz"

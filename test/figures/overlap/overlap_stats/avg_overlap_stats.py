@@ -151,4 +151,4 @@ for i in range(len(ax[2])):
 plt.subplots_adjust(top=0.99, bottom=0.015, left=0.05, right=0.995, hspace=0.2, wspace=0.5)
 fig.savefig("overlapping_stats.pdf")
 
-plt.show()
+# plt.show()
