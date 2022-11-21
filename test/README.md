@@ -433,63 +433,82 @@ bash summarize.sh
 cd ../../../
 ```
 
-
 ## Figures
 
-The [figures](./figures/) directory includes two subdirectories for the applications that BLEND is evaluated: 1) [finding overlapping reads](./figures/overlap/) and 2) [read mapping](./figures/read_mapping/). All last-level subdirectories include a script called `run.sh` to generate the figure in PDF format given that all the results are generated previously and the corresponding CSV files are filled accordingly. The CSV files we provide include the results we generate.
+The [figures](./figures/) directory includes two subdirectories for the applications that BLEND is evaluated: 1) [finding overlapping reads](./figures/overlap/) and 2) [read mapping](./figures/read_mapping/). The directory also includes [fuzzy_seed_matching](./figures/fuzzy_seed_matching/) that we use when evaluating the fuzzy seed matching statistics of BLEND. All last-level subdirectories include a script called `run.sh` to generate the figure in PDF format given that all the results are generated previously and the corresponding CSV files are filled accordingly. The CSV files we provide include the results we generate. These CSV files should be correctly updated if you re-run BLEND and other tools using the commands we provide above.
 
-`Python 3` and the `numpy`, `pandas`, and `seaborn` packages are suggested to generate these figures.
+`Python 3` and the `numpy`, `pandas`, `matplotlib`, `gnuplot`, and `seaborn` packages are suggested to generate these figures.
 
-### Generating the Performance and Peak Memory Usage Figures (Fig. 2 and Fig. 4)
+### Generating the Fuzzy Seed Matching Statistics Figure (Figure 7)
 
 ```bash
-#Finding overlapping reads (Figure 2)
-cd figures/overlap/perf/
-bash run.sh
-
-
-cd ../../../
-
-#Read mapping (Figure 4)
-cd figures/read_mapping/perf/
+#Overlap statistics (Figure 7)
+cd figures/fuzzy_seed_matching/
 bash run.sh
 
 cd ../../../
 ```
 
-### Generating the Overlap Statistics Figure (Figure 3)
+### Generating the Performance and Peak Memory Usage Figures
 
 ```bash
-#Overlap statistics (Figure 3)
+#Finding overlapping reads (Figure 8)
+cd figures/overlap/perf/
+bash run.sh
+
+cd ../
+#Finding overlapping reads between BLEND-I and BLEND-S (Supp. Figure S3)
+cd ./perf-blend/
+bash run.sh
+
+cd ../
+#Finding overlapping reads between BLEND-I, minimap2, and minimap2-Eq (Supp. Figure S5)
+cd ./perf-eq/
+bash run.sh
+
+cd ../../../
+
+#Read mapping (Figure 10)
+cd figures/read_mapping/perf/
+bash run.sh
+
+cd ../
+#Read mapping between BLEND-I and BLEND-S (Supp. Figure S4)
+cd figures/read_mapping/perf-blend/
+bash run.sh
+
+cd ../../../
+```
+
+### Generating the Overlap Statistics Figure (Figure 9)
+
+```bash
+#Overlap statistics (Figure 9)
 cd figures/overlap/overlap_stats/
 bash run.sh
 
 cd ../../../
 ```
 
-### Generating the GC Content Distribution Figure (Supp. Figure S1)
+### Generating the Read Mapping Accuracy Figure (Figure 11)
 
 ```bash
-#GC content distribution of assemblies (Supplementary Figure S1)
-cd figures/overlap/gc_dist/
-bash run.sh
-
-cd ../../../
-```
-
-### Generating the Read Mapping Accuracy Figure (Supp. Figure S2)
-
-```bash
-#Read mapping accuracy (Supplementary Figure S2)
+#Read mapping accuracy (Figure 11)
 cd figures/read_mapping/accuracy/
 bash run.sh
 
 cd ../../../
 ```
 
-### Source of Figures
-We also provide the source we use to generate the figures we report in our submission as well as the original PDFs we use in our paper. The source and the PDFs can be downloaded using the Zenodo link:
+### Generating the Genome-wide Coverage Comparison Figures (Supp. Figures S6, S7, and S8)
 
 ```bash
-wget https://zenodo.org/record/5782892/files/blend_figures.tar.gz
+#Genome-wide Coverage Comparison Figures (Supp. Figures S6, S7, and S8)
+cd figures/read_mapping/coverage/
+bash run.sh
 
+cd ../../../
+```
+
+### Source of Figures
+We provide the original PDFs we use in our paper. The source and the PDFs can be extracted from the PPTX files we provide in the [fuzzy_seed_matching](./figures/fuzzy_seed_matching/), [overlap](./figures/overlap/) and [read mapping](./figures/read_mapping/) directories. If new PDFs are generated using the commands above, the new PDFs can be replaced by the PDFs we have in the PPTX files to fully generate the original figures we have in our manuscript.

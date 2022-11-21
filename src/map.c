@@ -66,12 +66,14 @@ static void collect_minimizers(void *km, const mm_mapopt_t *opt, const mm_idx_t 
 {
 	int i, n, sum = 0;
 	mv->n = 0;
+
 	for (i = n = 0; i < n_segs; ++i) {
 		size_t j;
 
 		/*mv->a[i].x = kMer<<14 | kmerSpan
- 		mv->a[i].y = rid<<32 | lastPos<<1 | strand*/
+		mv->a[i].y = rid<<32 | lastPos<<1 | strand*/
 		mm_sketch(km, seqs[i], qlens[i], mi->w, mi->blend_bits, mi->k, mi->k_shift, mi->n_neighbors, i, mi->flag&MM_I_HPC, mi->flag&B_I_SKEWED, mi->flag&B_I_STROBEMERS, mv);
+
 		for (j = n; j < mv->n; ++j){
 			//last position i value is updated as i+sum (sum of previous qlens)
 			mv->a[j].y += sum << 1;

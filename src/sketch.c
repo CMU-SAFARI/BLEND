@@ -84,8 +84,8 @@ static inline int tq_shift(tiny_queue_t *q){
 }
 
 //https://stackoverflow.com/a/21673221
-static inline __m256i movemask_inverse(const uint32_t mask) {
-    __m256i vmask = _mm256_set1_epi32(mask);
+static inline __m256i movemask_inverse(const uint32_t hash_value) {
+    __m256i vmask = _mm256_set1_epi32(hash_value);
     const __m256i shuffle = _mm256_setr_epi64x(0x0000000000000000,
       0x0101010101010101, 0x0202020202020202, 0x0303030303030303);
     vmask = _mm256_shuffle_epi8(vmask, shuffle);
@@ -953,10 +953,12 @@ void mm_sketch_blend_dbg(void *km,
                      uint32_t rid,
                      int is_hpc,
 					 int is_blend,
-                     mm128_v *p){
+                     mm128_v *p,
+					 uint64_t* bTable,
+					 mm_bseq1_t *seq,
+					 uint32_t idx){
     
     assert(len > 0 && (w > 0 && w+k < 8192) && (k > 0 && k <= 28) && (n_neighbors > 0 && n_neighbors+k < 8192) && (blend_bits <= 56)); // 56 bits for k-mer; could use long k-mers, but 28 enough in practice
-    
     const int bk = (n_neighbors+k < 30)?n_neighbors+k-1:28;
 	const int blndK = (blend_bits>0)?blend_bits:2*bk;
     const uint64_t shift1 = 2*(k-1), bshift1 = 2*(bk-1), mask = (1ULL<<2*k)-1, bkmask = (1ULL<<2*bk)-1, blndMask = (1ULL<<blndK)-1, mask32 = (1ULL<<32)-1, sMask = (1ULL<<14)-1;
@@ -970,7 +972,6 @@ void mm_sketch_blend_dbg(void *km,
     int i, j, l, buf_pos, min_pos, kmer_span = 0, tot_span;
     mm128_t buf[w];
 	uint64_t bufKmer[w];
-	uint64_t* bTable = (uint64_t*)calloc(pow(2,blndK), sizeof(uint64_t));
     mm128_t min = { UINT64_MAX, UINT64_MAX };
     tiny_queue_t tq;
     
@@ -1021,9 +1022,9 @@ void mm_sketch_blend_dbg(void *km,
 
             ++l;
             if (l >= k && kmer_span < 256){
-                
-                hkmer[0] = MurmurHash3(kmer[0], blndMask);
-                hkmer[1] = MurmurHash3(kmer[1], blndMask);
+
+                hkmer[0] = hash64(kmer[0], blndMask);
+                hkmer[1] = hash64(kmer[1], blndMask);
                 blndBuf[f_blendpos].x = hkmer[0];
                 blndBuf[f_blendpos].y = hkmer[1];
                 blndBuf[f_blendpos].k = kmer_span;
@@ -1032,15 +1033,31 @@ void mm_sketch_blend_dbg(void *km,
                 if(++f_blendpos == n_neighbors) f_blendpos = 0;
 
                 if(l >= n_neighbors+k-1){
-
-					if(is_blend){
+					
+					if(is_blend&1){
 						blendVal[0] = calc_blend_rm_simd(&blndcnt_lsb, &blndcnt_msb, &ma, &mb, hkmer[0], 
 													blndBuf[f_blendpos].x, mask32, blndK);
 						blendVal[1] = calc_blend_rm_simd(&r_blndcnt_lsb, &r_blndcnt_msb, &ma, &mb, hkmer[1],
 														blndBuf[f_blendpos].y, mask32, blndK);
 					}else{
-						blendVal[0] = MurmurHash3(bkmer[0], blndMask);
-						blendVal[1] = MurmurHash3(bkmer[1], blndMask);
+						blendVal[0] = hash64(bkmer[0], bkmask);
+						blendVal[1] = hash64(bkmer[1], bkmask);
+					}
+
+					if(is_blend&2){
+						uint32_t indTable = (uint32_t)(blendVal[0]&mask32);
+						if(bTable[indTable] && idx != (uint32_t)(bTable[indTable]&mask32) && (uint32_t)bkmer[0] != (uint32_t)(bTable[indTable]>>32)){
+							collisionCount++;
+							table_to_seq(bkmer[0], hashToChar, bk);
+							table_to_seq((uint32_t)(bTable[indTable]>>32), hashToChar2, bk);
+							edit = levenshtein(hashToChar, hashToChar2);
+							if(edit < bk && edit >= 0) collisionEdits[edit]++;
+							editSum += edit;
+							mm_bseq1_t *t1 = &seq[idx];
+							mm_bseq1_t *t2 = &seq[(uint32_t)(bTable[indTable]&mask32)];
+							// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+							printf("%lu,%s,%s,%s,%s,%d\n", indTable, t1->seq, t2->seq, hashToChar, hashToChar2, edit);
+						}else bTable[indTable] = (uint64_t)bkmer[0]<<32 | idx;
 					}
 
                     tot_span = i - blndBuf[f_blendpos].i + (uint32_t)blndBuf[f_blendpos].k;
@@ -1053,54 +1070,14 @@ void mm_sketch_blend_dbg(void *km,
                 }
             }
         } else l = 0, tq.count = tq.front = 0, kmer_span = 0;
-        buf[buf_pos] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
-        bufKmer[buf_pos] = bkmer[(info.y&1)?1:0];
 
-        if (l == w + k - 1 && min.x != UINT64_MAX) { // special case for the first window - because identical k-mers are not stored yet
-            for (j = buf_pos + 1; j < w; ++j)
-                if (min.x == buf[j].x && buf[j].y != min.y) kv_push(mm128_t, km, *p, buf[j]);
-            for (j = 0; j < buf_pos; ++j)
-                if (min.x == buf[j].x && buf[j].y != min.y) kv_push(mm128_t, km, *p, buf[j]);
-        }
-        if (info.x <= min.x) { // a new minimum; then write the old min
-            if (l >= w + k && min.x != UINT64_MAX) {
-				kv_push(mm128_t, km, *p, min); minCount++;
-				uint32_t indTable = (uint32_t)((min.x>>14)&mask32);
-				if(bTable[indTable] && bufKmer[min_pos] != bTable[indTable]){
-					collisionCount++;
-					table_to_seq(bufKmer[min_pos], hashToChar, bk);
-					table_to_seq(bTable[indTable], hashToChar2, bk);
-					edit = levenshtein(hashToChar, hashToChar2);
-					if(edit < bk && edit >= 0) collisionEdits[edit]++;
-					editSum += edit;
-					if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
-						printf("%lu %s %s %d\n", min.x>>14, hashToChar, hashToChar2, edit); 
-				}else bTable[indTable] = bufKmer[min_pos];
-			}
-            min = info, min_pos = buf_pos;
-        } else if (buf_pos == min_pos) { // old min has moved outside the window
-            if (l >= w + k - 1 && min.x != UINT64_MAX) {
-				kv_push(mm128_t, km, *p, min); minCount++;
-				uint32_t indTable = (uint32_t)((min.x>>14)&mask32);
-				if(bTable[indTable] && bufKmer[min_pos] != bTable[indTable]){
-					collisionCount++;
-					table_to_seq(bufKmer[min_pos], hashToChar, bk);
-					table_to_seq(bTable[indTable], hashToChar2, bk);
-					edit = levenshtein(hashToChar, hashToChar2);
-					if(edit < bk && edit >= 0) collisionEdits[edit]++;
-					editSum += edit;
-					if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
-						printf("%lu %s %s %d\n", min.x>>14, hashToChar, hashToChar2, edit); 
-				}else bTable[indTable] = bufKmer[min_pos];
-			}
-            for (j = buf_pos + 1, min.x = UINT64_MAX; j < w; ++j) // the two loops are necessary when there are identical k-mers
-                if (min.x >= buf[j].x) min = buf[j], min_pos = j; // >= is important s.t. min is always the closest k-mer
-            for (j = 0; j <= buf_pos; ++j)
-                if (min.x >= buf[j].x) min = buf[j], min_pos = j;
-            if (l >= w + k - 1 && min.x != UINT64_MAX) { // write identical k-mers
-                for (j = buf_pos + 1; j < w; ++j){ // these two loops make sure the output is sorted
-                    if (min.x == buf[j].x && min.y != buf[j].y) {
-						kv_push(mm128_t, km, *p, buf[j]); minCount++;
+		if(!(is_blend&2)){
+			buf[buf_pos] = info; // need to do this here as appropriate buf_pos and buf[buf_pos] are needed below
+        	bufKmer[buf_pos] = bkmer[(info.y&1)?1:0];
+			if (l == w + k - 1 && min.x != UINT64_MAX) { // special case for the first window - because identical k-mers are not stored yet
+				for (j = buf_pos + 1; j < w; ++j)
+					if (min.x == buf[j].x && buf[j].y != min.y) {
+						kv_push(mm128_t, km, *p, buf[j]);
 						uint32_t indTable = (uint32_t)((buf[j].x>>14)&mask32);
 						if(bTable[indTable] && bufKmer[j] != bTable[indTable]){
 							collisionCount++;
@@ -1109,14 +1086,13 @@ void mm_sketch_blend_dbg(void *km,
 							edit = levenshtein(hashToChar, hashToChar2);
 							if(edit < bk && edit >= 0) collisionEdits[edit]++;
 							editSum += edit;
-							if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
-								printf("%lu %s %s %d\n", buf[j].x>>14, hashToChar, hashToChar2, edit);
+							// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+							printf("%lu,%s,%s,%d\n", buf[j].x>>14, hashToChar, hashToChar2, edit);
 						}else bTable[indTable] = bufKmer[j];
 					}
-				}
-                for (j = 0; j <= buf_pos; ++j){
-                    if (min.x == buf[j].x && min.y != buf[j].y) {
-						kv_push(mm128_t, km, *p, buf[j]); minCount++;
+				for (j = 0; j < buf_pos; ++j)
+					if (min.x == buf[j].x && buf[j].y != min.y) {
+						kv_push(mm128_t, km, *p, buf[j]);
 						uint32_t indTable = (uint32_t)((buf[j].x>>14)&mask32);
 						if(bTable[indTable] && bufKmer[j] != bTable[indTable]){
 							collisionCount++;
@@ -1125,32 +1101,100 @@ void mm_sketch_blend_dbg(void *km,
 							edit = levenshtein(hashToChar, hashToChar2);
 							if(edit < bk && edit >= 0) collisionEdits[edit]++;
 							editSum += edit;
-							if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
-								printf("%lu %s %s %d\n", buf[j].x>>14, hashToChar, hashToChar2, edit); 
+							// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+							printf("%lu,%s,%s,%d\n", buf[j].x>>14, hashToChar, hashToChar2, edit);
 						}else bTable[indTable] = bufKmer[j];
 					}
+			}
+			if (info.x <= min.x) { // a new minimum; then write the old min
+				if (l >= w + k && min.x != UINT64_MAX) {
+					kv_push(mm128_t, km, *p, min); minCount++;
+					uint32_t indTable = (uint32_t)((min.x>>14)&mask32);
+					if(bTable[indTable] && bufKmer[min_pos] != bTable[indTable]){
+						collisionCount++;
+						table_to_seq(bufKmer[min_pos], hashToChar, bk);
+						table_to_seq(bTable[indTable], hashToChar2, bk);
+						edit = levenshtein(hashToChar, hashToChar2);
+						if(edit < bk && edit >= 0) collisionEdits[edit]++;
+						editSum += edit;
+						// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+						printf("%lu,%s,%s,%d\n", min.x>>14, hashToChar, hashToChar2, edit); 
+					}else bTable[indTable] = bufKmer[min_pos];
 				}
-            }
-        }
-
-        if(++buf_pos == w) buf_pos = 0;
+				min = info, min_pos = buf_pos;
+			} else if (buf_pos == min_pos) { // old min has moved outside the window
+				if (l >= w + k - 1 && min.x != UINT64_MAX) {
+					kv_push(mm128_t, km, *p, min); minCount++;
+					uint32_t indTable = (uint32_t)((min.x>>14)&mask32);
+					if(bTable[indTable] && bufKmer[min_pos] != bTable[indTable]){
+						collisionCount++;
+						table_to_seq(bufKmer[min_pos], hashToChar, bk);
+						table_to_seq(bTable[indTable], hashToChar2, bk);
+						edit = levenshtein(hashToChar, hashToChar2);
+						if(edit < bk && edit >= 0) collisionEdits[edit]++;
+						editSum += edit;
+						// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+						printf("%lu,%s,%s,%d\n", min.x>>14, hashToChar, hashToChar2, edit); 
+					}else bTable[indTable] = bufKmer[min_pos];
+				}
+				for (j = buf_pos + 1, min.x = UINT64_MAX; j < w; ++j) // the two loops are necessary when there are identical k-mers
+					if (min.x >= buf[j].x) min = buf[j], min_pos = j; // >= is important s.t. min is always the closest k-mer
+				for (j = 0; j <= buf_pos; ++j)
+					if (min.x >= buf[j].x) min = buf[j], min_pos = j;
+				if (l >= w + k - 1 && min.x != UINT64_MAX) { // write identical k-mers
+					for (j = buf_pos + 1; j < w; ++j){ // these two loops make sure the output is sorted
+						if (min.x == buf[j].x && min.y != buf[j].y) {
+							kv_push(mm128_t, km, *p, buf[j]); minCount++;
+							uint32_t indTable = (uint32_t)((buf[j].x>>14)&mask32);
+							if(bTable[indTable] && bufKmer[j] != bTable[indTable]){
+								collisionCount++;
+								table_to_seq(bufKmer[j], hashToChar, bk);
+								table_to_seq(bTable[indTable], hashToChar2, bk);
+								edit = levenshtein(hashToChar, hashToChar2);
+								if(edit < bk && edit >= 0) collisionEdits[edit]++;
+								editSum += edit;
+								// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+								printf("%lu,%s,%s,%d\n", buf[j].x>>14, hashToChar, hashToChar2, edit);
+							}else bTable[indTable] = bufKmer[j];
+						}
+					}
+					for (j = 0; j <= buf_pos; ++j){
+						if (min.x == buf[j].x && min.y != buf[j].y) {
+							kv_push(mm128_t, km, *p, buf[j]); minCount++;
+							uint32_t indTable = (uint32_t)((buf[j].x>>14)&mask32);
+							if(bTable[indTable] && bufKmer[j] != bTable[indTable]){
+								collisionCount++;
+								table_to_seq(bufKmer[j], hashToChar, bk);
+								table_to_seq(bTable[indTable], hashToChar2, bk);
+								edit = levenshtein(hashToChar, hashToChar2);
+								if(edit < bk && edit >= 0) collisionEdits[edit]++;
+								editSum += edit;
+								// if(edit <= (bk-1)*0.2+1) //printing collisions with at most 20% similarity
+								printf("%lu,%s,%s,%d\n", buf[j].x>>14, hashToChar, hashToChar2, edit); 
+							}else bTable[indTable] = bufKmer[j];
+						}
+					}
+				}
+			}
+			if(++buf_pos == w) buf_pos = 0;
+		}
     }
     if (min.x != UINT64_MAX)
         kv_push(mm128_t, km, *p, min);
 
-	fprintf(stderr, "[DEBUG] Total minimizer: %d\tTotal Collision: %d\tCollision/Minimizer ratio: %f\tAverage Collision Edit Distance: %f\n", minCount, collisionCount, (double)collisionCount/minCount, (double)editSum/collisionCount);
+	if(!(is_blend&2)){
+		fprintf(stderr, "[DEBUG] Total minimizer: %d\tTotal Collision: %d\tCollision/Minimizer ratio: %f\tAverage Collision Edit Distance: %f\n", minCount, collisionCount, (double)collisionCount/minCount, (double)editSum/collisionCount);
 
-	fprintf(stderr, "[DEBUG] Number of collisions with a certain edit distance ([edit]: count):\n");
-	for(int i = 0; i < bk; ++i){
-		fprintf(stderr, "[%d]: %u ", i, collisionEdits[i]);
-	}fprintf(stderr, "\n");
+		fprintf(stderr, "[DEBUG] Number of collisions with a certain edit distance ([edit]: count):\n");
+		for(int i = 0; i < bk; ++i){
+			fprintf(stderr, "[%d]: %u ", i, collisionEdits[i]);
+		}fprintf(stderr, "\n");
 
-	fprintf(stderr, "[DEBUG] Ratio of collisions with a certain edit distance ([edit]: count):\n");
-	for(int i = 0; i < bk; ++i){
-		fprintf(stderr, "[%d]: %0.2f ", i, (double)collisionEdits[i]/collisionCount);
-	}fprintf(stderr, "\n");
-
-	free(bTable);
+		fprintf(stderr, "[DEBUG] Ratio of collisions with a certain edit distance ([edit]: count):\n");
+		for(int i = 0; i < bk; ++i){
+			fprintf(stderr, "[%d]: %0.2f ", i, (double)collisionEdits[i]/collisionCount);
+		}fprintf(stderr, "\n");
+	}
 }
 
 void mm_sketch(void *km,
@@ -1166,16 +1210,10 @@ void mm_sketch(void *km,
                int is_skewed,
                int is_strobs,
                mm128_v *p){
-    
-	if (mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) {
-		mm_sketch_blend_dbg(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, 1, p);
- 	} else if (mm_dbg_flag & MM_DBG_PRINT_HASH) {
-		mm_sketch_blend_dbg(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, 0, p);
- 	} else{
-		if(is_skewed > 0)
-			mm_sketch_sk_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
-		else if(is_strobs)
-			mm_sketch_sb_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
-		else mm_sketch_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
-	}
+
+	if(is_skewed > 0)
+		mm_sketch_sk_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
+	else if(is_strobs)
+		mm_sketch_sb_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
+	else mm_sketch_blend(km, str, len, w, blend_bits, k, n_neighbors, rid, is_hpc, p);
 }

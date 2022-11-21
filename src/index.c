@@ -332,6 +332,7 @@ static void *worker_pipeline(void *shared, int step, void *in)
 	int i;
     pipeline_t *p = (pipeline_t*)shared;
     // printf("%s1\n", __func__);
+
     if (step == 0) { // step 0: read sequences
     	// printf("%s2\n", __func__);
         step_t *s;
@@ -385,20 +386,38 @@ static void *worker_pipeline(void *shared, int step, void *in)
 			return s;
 		} else free(s);
     } else if (step == 1) { // step 1: compute sketch
+		const int bk = (p->mi->n_neighbors+p->mi->k < 30)?p->mi->n_neighbors+p->mi->k-1:28;
+		const uint64_t blndK = (p->mi->blend_bits>0)?p->mi->blend_bits:2*bk;
+		uint64_t* bTable;
+		int dbg_flag = -1;
+
+		if ((mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) || (mm_dbg_flag & MM_DBG_PRINT_HASH)){
+			bTable = (uint64_t*)calloc((uint64_t)pow(2,blndK), sizeof(uint64_t));
+			dbg_flag = 0;
+			if(mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) dbg_flag |= 1;
+			if(mm_dbg_flag & MM_DBG_PRINT_SIM) dbg_flag |= 2;
+		}
+
     	// printf("%s5\n", __func__);
         step_t *s = (step_t*)in;
 		for (i = 0; i < s->n_seq; ++i) {
 			mm_bseq1_t *t = &s->seq[i];
+			
 			if (t->l_seq > 0){
 				// printf("%s6 %d %d %s %s\n", __func__, t->l_seq, t->rid, t->name, t->seq);
 				//check "mm_bseq1_t" in bseq.h for the meanings of l_seq etc...
-				mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, p->mi->flag&B_I_SKEWED, p->mi->flag&B_I_STROBEMERS, &s->a);
+				if (dbg_flag >= 0) {
+					mm_sketch_blend_dbg(0, t->seq,  t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, dbg_flag, &s->a, bTable, s->seq, i);
+				}else{
+					mm_sketch(0, t->seq, t->l_seq, p->mi->w, p->mi->blend_bits, p->mi->k, p->mi->k_shift, p->mi->n_neighbors, t->rid, p->mi->flag&MM_I_HPC, p->mi->flag&B_I_SKEWED, p->mi->flag&B_I_STROBEMERS, &s->a);
+				}
 			}
 			else if (mm_verbose >= 2)
 				fprintf(stderr, "[WARNING] the length database sequence '%s' is 0\n", t->name);
-			free(t->seq); free(t->name);
+			if (dbg_flag < 0) {free(t->seq); free(t->name);}
 		}
 		free(s->seq); s->seq = 0;
+		if ((mm_dbg_flag & MM_DBG_PRINT_BLEND_HASH) || (mm_dbg_flag & MM_DBG_PRINT_HASH)) free(bTable);
 		return s;
     } else if (step == 2) { // dispatch sketch to buckets
     	// printf("%s6\n", __func__);

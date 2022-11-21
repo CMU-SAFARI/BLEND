@@ -62,7 +62,6 @@ test/comparisons/*/read_mapping/figures/
 
 test/comparisons/*/overlap/quast/
 test/comparisons/*/overlap/dnadiff/
-test/comparisons/*/overlap/*evaluate.*
 test/comparisons/*/overlap/*.stats
 test/comparisons/*/overlap/*.ov-eval
 test/comparisons/*/overlap/figures/
@@ -71,7 +70,15 @@ test/comparisons/*/sv_calling/*/
 test/comparisons/*/sv_calling/*.err
 test/comparisons/*/sv_calling/*.out
 
+test/figures/fuzzy_seed_matching/blend*.csv
+test/figures/fuzzy_seed_matching/minimap2*.csv
+test/figures/fuzzy_seed_matching/minimap2*.csv
+test/figures/fuzzy_seed_matching/*.fasta
+test/figures/fuzzy_seed_matching/aligned_kmers/*.fasta
+test/figures/fuzzy_seed_matching/*_collision_stats.txt
+
 test/figures/*/*/*.pdf
+test/figures/*/*/*.eps
 test/figures/*/*.pdf
 test/mhap/*.out
 test/mhap/*.err

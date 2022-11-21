@@ -16,6 +16,7 @@
 #define MM_DBG_PRINT_CHAIN   0x10
 #define MM_DBG_PRINT_BLEND_HASH   0x20
 #define MM_DBG_PRINT_HASH   0x40
+#define MM_DBG_PRINT_SIM   0x80
 
 //@IMPORTANT: these flags started from 40 assuming 8 bit spanning. changed it to 32+14
 #define MM_SEED_LONG_JOIN  (1ULL<<46)
@@ -69,6 +70,8 @@ void radix_sort_64(uint64_t *beg, uint64_t *end);
 uint32_t ks_ksmall_uint32_t(size_t n, uint32_t arr[], size_t kk);
 
 void mm_sketch_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
+
+void mm_sketch_blend_dbg(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, int is_blend, mm128_v *p, uint64_t* bTable, mm_bseq1_t * seq, uint32_t idx);
 
 void mm_sketch_sk_blend(void *km, const char *str, int len, int w, int blend_bits, int k, int n_neighbors, uint32_t rid, int is_hpc, mm128_v *p);
 

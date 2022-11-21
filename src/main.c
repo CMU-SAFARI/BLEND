@@ -86,6 +86,7 @@ static ko_longopt_t long_options[] = {
     { "immediate",      ko_no_argument, 	  359 },
 	{ "dbg-blend_hash", ko_no_argument, 	  360 },
 	{ "dbg-hash", 		ko_no_argument, 	  361 },
+	{ "dbg-sim-hash", 	ko_no_argument, 	  362 },
 	{ "help",           ko_no_argument,       'h' },
 	{ "max-intron-len", ko_required_argument, 'G' },
 	{ "version",        ko_no_argument,       'V' },
@@ -259,6 +260,7 @@ int main(int argc, char *argv[])
 		else if (c == 359) ipt.flag &= 0x0f; // --immediate (disable strobemers)
 		else if (c == 360) mm_dbg_flag |= MM_DBG_PRINT_BLEND_HASH; //--dbg-blend_hash
 		else if (c == 361) mm_dbg_flag |= MM_DBG_PRINT_HASH; //--dbg-hash
+		else if (c == 362) mm_dbg_flag |= MM_DBG_PRINT_SIM; //--dbg-sim-hash
 		else if (c == 330) {
 			fprintf(stderr, "[WARNING] \033[1;31m --lj-min-ratio has been deprecated.\033[0m\n");
 		} else if (c == 314) { // --frag
