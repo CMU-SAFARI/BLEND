@@ -14,6 +14,7 @@
 #include "mmpriv.h"
 #include "kvec.h"
 #include "khash.h"
+#include "math.h"
 
 #define idx_hash(a) ((a)>>1)
 #define idx_eq(a, b) ((a)>>1 == (b)>>1)
