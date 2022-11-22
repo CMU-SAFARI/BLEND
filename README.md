@@ -32,6 +32,34 @@ cd blend && make
 
 If the compilation is successful, the binary called `blend` will be located under `bin`.
 
+## (Optional) Building and running with Docker
+
+* Build and running from the local Dockerfile:
+
+```bash
+#Build
+docker compose -f docker-compose.yml build
+
+#Example run
+docker run -v $PWD/e.coli-pb-sequelii/:/input -v $PWD/output/:/output blend -x ava-hifi -o /output/output.paf /input/Ecoli.PB.HiFi.100X.fasta /input/Ecoli.PB.HiFi.100X.fasta
+
+#You can also work from the docker image after executing the following (interactive usage):
+docker run --rm -it --entrypoint /bin/bash blend
+```
+
+* Build from DockerHub:
+
+```bash
+#Build
+docker pull firtinac/blend
+
+#Example run
+docker run -v $PWD/e.coli-pb-sequelii/:/input -v $PWD/output/:/output firtinac/blend -x ava-hifi -o /output/output.paf /input/Ecoli.PB.HiFi.100X.fasta /input/Ecoli.PB.HiFi.100X.fasta
+
+#You can also work from the docker image after executing the following (interactive usage):
+docker run --rm -it --entrypoint /bin/bash firtinac/blend
+```
+
 ## Usage
 
 You can print the help message to learn how to use `blend`:
@@ -115,3 +143,16 @@ If you use BLEND in your work, please cite:
 > "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis"
 > arXiv preprint **arXiv**:2112.08687 (2021). [DOI](https://doi.org/10.48550/arXiv.2112.08687)
 
+BIB:
+
+```bibtex
+@article{firtina_blend_2021,
+  title = {{BLEND}: {A} {Fast}, {Memory}-{Efficient}, and {Accurate} {Mechanism} to {Find} {Fuzzy} {Seed} {Matches}},
+  url = {https://doi.org/10.48550/ARXIV.2112.08687},
+  journal = {arXiv},
+  author = {Firtina, Can and Park, Jisung and Alser, Mohammed and Kim, Jeremie S. and Senol Cali, Damla and Shahroodi, Taha and Ghiasi, Nika Mansouri and Singh, Gagandeep and Kanellopoulos, Konstantinos and Alkan, Can and Mutlu, Onur},
+  year = {2021},
+  month = dec,
+  doi = {10.48550/ARXIV.2112.08687},
+}
+```
