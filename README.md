@@ -34,11 +34,16 @@ If the compilation is successful, the binary called `blend` will be located unde
 
 ## (Optional) Building and running with Docker
 
+**Important** Your docker version should be at least 20.10.12. For the older versions, unexpected behaviors may occur.
+
 * Build and running from the local Dockerfile:
 
 ```bash
 #Build
-docker compose -f docker-compose.yml build
+docker build --rm -f "Dockerfile" -t blend "."
+
+#Note: If your network connection is behind a proxy, you can define the following variables to set the proxy and build
+# docker build --build-arg http_proxy="YOUR_HTTP_PROXY" --build-arg https_proxy="YOUR_HTTPS_PROXY" --no-cache --rm -f "Dockerfile" -t blend "."
 
 #Example run
 docker run -v $PWD/e.coli-pb-sequelii/:/input -v $PWD/output/:/output blend -x ava-hifi -o /output/output.paf /input/Ecoli.PB.HiFi.100X.fasta /input/Ecoli.PB.HiFi.100X.fasta
