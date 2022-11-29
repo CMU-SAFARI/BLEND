@@ -157,7 +157,7 @@ If you use BLEND in your work, please cite:
 BIB:
 
 ```bibtex
-@article{firtina_blend_2021,
+@article{firtina_blend_2022,
   title = {{BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis}},
   url = {https://doi.org/10.1101/2022.11.23.517691},
   journal = {bioRxiv},
