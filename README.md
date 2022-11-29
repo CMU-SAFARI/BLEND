@@ -8,7 +8,11 @@ For proof of work, we integrate the BLEND mechanism into [minimap2](https://gith
 - We implement a simple version of the strobemer seeds in minimap2 in three steps. First, we find minimizer k-mers using the [original hash function](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L28-L38) that minimap2 uses. Second, we link each `n` consecutive minimizer k-mer in a strobemer seeds. Third, we use the BLEND mechanism for generating the hash value of the strobemer seed based on the hash values of linked k-mers.
 - We enable the minimap2 implementation to use seeds longer than 256 characters so that it can store longer seeds when using BLEND. The current implementation of minimap2 allocates 8 bits to store seed lengths up to 256 characters. We change this requirement in various places of the implementation (e.g., [line 112 in sketch.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/sketch.c#L112) and [line 239 in index.c](https://github.com/lh3/minimap2/blob/7358a1ead1adfa89a2d3d0e72ffddd05732f9850/index.c#L239)) so that BLEND can use 14 bits to store seed lengths up to 16384 characters. We do this because BLEND merges many k-mers into a single seed, which can be much larger than a 256 character-long seed.
 
-## Cloning the source code
+# Installation
+
+BLEND can be installed from its source code, Docker, or conda.
+
+## [Source Code](https://github.com/CMU-SAFARI/BLEND)
 
 * Download the code from its GitHub repository:
 
@@ -16,23 +20,25 @@ For proof of work, we integrate the BLEND mechanism into [minimap2](https://gith
 git clone https://github.com/CMU-SAFARI/BLEND.git blend
 ```
 
-## Compiling from the source code
-
 Compilation process is similar to minimap2's compilation as also explained in more detail [here](https://github.com/lh3/minimap2/tree/7358a1ead1adfa89a2d3d0e72ffddd05732f9850#installation).
 
-Before compiling BLEND:
-
-* Make sure you have a C compiler and GNU make, 
-
-To compile:
+* Compile (Make sure you have a C compiler and GNU make):
 
 ```bash
 cd blend && make
 ```
 
-If the compilation is successful, the binary called `blend` will be located under `bin`.
+If the compilation is successful, the binary will be in `bin/blend`.
 
-## (Optional) Building and running with Docker
+## [Conda](https://anaconda.org/bioconda/blend-bio)
+
+* Install BLEND from the bioconda channel
+
+```bash
+conda install -c bioconda blend-bio
+```
+
+## [Docker](https://hub.docker.com/r/firtinac/blend)
 
 **Important** Your docker version should be at least 20.10.12. For the older versions, unexpected behaviors may occur.
 
@@ -65,7 +71,7 @@ docker run -v $PWD/e.coli-pb-sequelii/:/input -v $PWD/output/:/output firtinac/b
 docker run --rm -it --entrypoint /bin/bash firtinac/blend
 ```
 
-## Usage
+# Usage
 
 You can print the help message to learn how to use `blend`:
 
@@ -80,7 +86,7 @@ BLEND provides the preset parameters depending on:
 * The application: 1) Finding overlapping reads and 2) read mapping.
 * Sequencing Technology: 1) Accurate long reads (e.g., PacBio HiFi reads), 2) erroneous long reads (e.g., PacBio CLR reads), and 2) short reads (i.e., Illumina paired-end reads). 
 
-### Finding Overlapping Reads
+## Finding Overlapping Reads
 
 Assume that you would like to perform `all-vs-all` overlapping between all pairs of HiFi reads from a human genome located in file `reads.fastq`. To find overlapping reads and store them in the [PAF](https://github.com/lh3/miniasm/blob/master/PAF.md) file `output.paf`:
 
@@ -88,7 +94,7 @@ Assume that you would like to perform `all-vs-all` overlapping between all pairs
 blend -x ava-hifi reads.fastq reads.fastq > output.paf
 ```
 
-### Read Mapping
+## Read Mapping
 
 Assume that you would like to map PacBio CLR reads in file `reads.fastq` to a reference genome in file `ref.fasta`. To generate the read mapping with the CIGAR output in the [SAM](https://samtools.github.io/hts-specs/SAMv1.pdf) file `output.sam`:
 
@@ -139,25 +145,25 @@ BLEND provides the following preset options:
 
 We explain how to reproduce the results we show in the BLEND paper in the [test directory](./test/).
 
-## <a name="cite"></a>Citing BLEND
+# <a name="cite"></a>Citing BLEND
 
 If you use BLEND in your work, please cite:
 
 > Can Firtina, Jisung Park, Mohammed Alser, Jeremie S. Kim, Damla Senol Cali, Taha Shahroodi, 
-> Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu
-> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis"
-> arXiv preprint **arXiv**:2112.08687 (2021). [DOI](https://doi.org/10.48550/arXiv.2112.08687)
+> Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu,
+> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis,"
+> *bioRxiv* (2022). [DOI](https://doi.org/10.1101/2022.11.23.517691)
 
 BIB:
 
 ```bibtex
 @article{firtina_blend_2021,
-  title = {{BLEND}: {A} {Fast}, {Memory}-{Efficient}, and {Accurate} {Mechanism} to {Find} {Fuzzy} {Seed} {Matches}},
-  url = {https://doi.org/10.48550/ARXIV.2112.08687},
-  journal = {arXiv},
-  author = {Firtina, Can and Park, Jisung and Alser, Mohammed and Kim, Jeremie S. and Senol Cali, Damla and Shahroodi, Taha and Ghiasi, Nika Mansouri and Singh, Gagandeep and Kanellopoulos, Konstantinos and Alkan, Can and Mutlu, Onur},
-  year = {2021},
-  month = dec,
-  doi = {10.48550/ARXIV.2112.08687},
+  title = {{BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis}},
+  url = {https://doi.org/10.1101/2022.11.23.517691},
+  journal = {bioRxiv},
+  author = {Firtina, Can and Park, Jisung and Alser, Mohammed and Kim, Jeremie S. and Cali, Damla Senol and Shahroodi, Taha and Ghiasi, Nika Mansouri and Singh, Gagandeep and Kanellopoulos, Konstantinos and Alkan, Can and Mutlu, Onur},
+  year = {2022},
+  month = nov,
+  doi = {10.1101/2022.11.23.517691},
 }
 ```
