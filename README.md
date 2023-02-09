@@ -156,21 +156,17 @@ We explain how to reproduce the results we show in the BLEND paper in the [test 
 
 If you use BLEND in your work, please cite:
 
-> Can Firtina, Jisung Park, Mohammed Alser, Jeremie S. Kim, Damla Senol Cali, Taha Shahroodi, 
-> Nika Mansouri Ghiasi, Gagandeep Singh, Konstantinos Kanellopoulos, Can Alkan, and Onur Mutlu,
-> "BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis,"
-> *bioRxiv* (2022). [DOI](https://doi.org/10.1101/2022.11.23.517691)
-
-BIB:
-
 ```bibtex
-@article{firtina_blend_2022,
-  title = {{BLEND: A Fast, Memory-Efficient, and Accurate Mechanism to Find Fuzzy Seed Matches in Genome Analysis}},
-  url = {https://doi.org/10.1101/2022.11.23.517691},
-  journal = {bioRxiv},
-  author = {Firtina, Can and Park, Jisung and Alser, Mohammed and Kim, Jeremie S. and Cali, Damla Senol and Shahroodi, Taha and Ghiasi, Nika Mansouri and Singh, Gagandeep and Kanellopoulos, Konstantinos and Alkan, Can and Mutlu, Onur},
-  year = {2022},
-  month = nov,
-  doi = {10.1101/2022.11.23.517691},
+@article{firtina_blend_2023,
+  title = {{BLEND}: a fast, memory-efficient and accurate mechanism to find fuzzy seed matches in genome analysis},
+  volume = {5},
+  issn = {2631-9268},
+  doi = {10.1093/nargab/lqad004},
+  number = {1},
+  journal = {NAR Genomics and Bioinformatics},
+  author = {Firtina, Can and Park, Jisung and Alser, Mohammed and Kim, Jeremie S and Cali, Damla Senol and Shahroodi, Taha and Ghiasi, Nika Mansouri and Singh, Gagandeep and Kanellopoulos, Konstantinos and Alkan, Can and Mutlu, Onur},
+  month = {mar},
+  year = {2023},
+  pages = {lqad004},
 }
 ```
