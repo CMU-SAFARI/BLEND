@@ -15,7 +15,7 @@ set multiplot layout 1,3
 
 set label "(a)" at graph -0.245,1.06 font "Helvetica-bold,40"
 set xlab "Error rate of mapped PacBio reads (CHM13)"
-set ylab "Fraction of mapped reads" off +2
+set ylab "Fraction of reads" off +2
 set ytics 0.02
 set yran [0.86:1]
 

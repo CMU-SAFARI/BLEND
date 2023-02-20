@@ -32,6 +32,8 @@
 *.app
 bin/
 
+.vscode/
+
 MacOS-related
 *.DS_Store
 */*.DS_Store
