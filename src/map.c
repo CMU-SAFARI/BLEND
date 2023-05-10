@@ -390,7 +390,6 @@ void mm_map_frag(const mm_idx_t *mi, int n_segs, const int *qlens, const char **
 				rechain = 1;
 		} else rechain = 1;
 		if (rechain) { // redo chaining with a higher max_occ threshold
-			printf("%s rechain\n", __func__);
 			kfree(b->km, a);
 			kfree(b->km, u);
 			kfree(b->km, mini_pos);
